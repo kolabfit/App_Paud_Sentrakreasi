@@ -30,8 +30,8 @@ importers:
         specifier: ^5.1.2
         version: 5.1.2(astro@4.16.12(@types/node@22.0.2)(rollup@4.28.1)(typescript@5.5.4))(tailwindcss@3.4.7)
       '@iconify-json/tabler':
-        specifier: ^1.1.116
-        version: 1.1.118
+        specifier: ^1.2.35
+        version: 1.2.35
       astro:
         specifier: ^4.16.12
         version: 4.16.12(@types/node@22.0.2)(rollup@4.28.1)(typescript@5.5.4)
@@ -256,6 +256,7 @@ packages:
   '@builder.io/partytown@0.10.2':
     resolution: {integrity: sha512-A9U+4PREWcS+CCYzKGIPovtGB/PBgnH/8oQyCE6Nr9drDJk6cMPpLQIEajpGPmG9tYF7N3FkRvhXm/AS9+0iKg==}
     engines: {node: '>=18.0.0'}
+    deprecated: Use @qwik.dev/partytown instead
     hasBin: true
 
   '@cloudflare/kv-asset-handler@0.3.4':
@@ -758,8 +759,8 @@ packages:
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
     engines: {node: '>=14'}
 
-  '@iconify-json/tabler@1.1.118':
-    resolution: {integrity: sha512-nDOjYG75BlagOe4e+V3K4qVFujdPOeYzi6ZB3sYz0xbdIkpSF/4YvKGdLDr4tmkwGUTV8fhlHVfMpRoDoBnnnA==}
+  '@iconify-json/tabler@1.2.35':
+    resolution: {integrity: sha512-/sJMqHvh5ZWrEERVfDCT5NjVDeKJdhosFtKjJofAVl+P/3AzLiryOQw7WvrfDF25Xa5N/eoOQ15Y1jnhYXxBoQ==}
 
   '@iconify/tools@3.0.7':
     resolution: {integrity: sha512-DxfhFLMnooS34dHelpGUnnYrxLZHs0czC1CgrBhAbuL8ddVzBb2VEQm8kh9qGh7A34qeXAB5iSHH3A72rAaFrg==}
@@ -1251,6 +1252,7 @@ packages:
 
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
+    deprecated: Potential CWE-502 - Update to 1.3.1 or higher
 
   '@vercel/stega@0.1.2':
     resolution: {integrity: sha512-P7mafQXjkrsoyTRppnt0N21udKS9wUmLXHRyP9saLXLHw32j/FgUJ3FscSWgvSqRs4cj7wKZtwqJEvWJ2jbGmA==}
@@ -1361,6 +1363,7 @@ packages:
 
   astro-integration-kit@0.17.0:
     resolution: {integrity: sha512-fe31CCKmrGYn/kkBd1J4b7P02gEdMdEIFBz14zdAud+YAmJeLtZD6wmrCz3LDau+lE1oM1hQnvmZXVSM/YveKw==}
+    deprecated: 'Check the migration guide: https://astro-integration-kit.netlify.app/migration-guide/'
     peerDependencies:
       astro: ^4.12.0 || ^5.0.0-beta
 
@@ -1636,8 +1639,8 @@ packages:
     resolution: {integrity: sha512-rBMvIzlpA8v6E+SJZoo++HAYqsLrkg7MSfIinMPFhmkorw7X+dOXVJQs+QT69zGkzMyfDnIMN2Wid1+NbL3T+A==}
     engines: {node: '>= 0.4'}
 
-  defu@6.1.4:
-    resolution: {integrity: sha512-mEQCMmwJu317oSz8CwdIOdwf3xMif1ttiM8LTufzc3g6kR+9Pe236twL8j3IYT1F7GfRgGcW6MWxzZjLIkuHIg==}
+  defu@6.1.7:
+    resolution: {integrity: sha512-7z22QmUWiQ/2d0KkdYmANbRUVABpZ9SNYyH5vx6PZ+nE5bcC0l7uFvEfHlyld/HcGBFTL536ClDt3DEcSlEJAQ==}
 
   delayed-stream@1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
@@ -1946,6 +1949,7 @@ packages:
 
   glob@10.4.5:
     resolution: {integrity: sha512-7Bv8RF0k6xjo7d4A/PxYLbUCfb6c+Vpd2/mB2yRDlew7Jb5hEXiCD9ibfO7wpk8i4sevK6DFny9h7EYbM3/sHg==}
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
     hasBin: true
 
   globals@11.12.0:
@@ -2573,8 +2577,8 @@ packages:
     resolution: {integrity: sha512-kDCGIbxkDSXE3euJZZXzc6to7fCrKHNI/hSRQnRuQ+BWjFNzZwiFF8fj/6o2t2G9/jTj8PSIYTfCLelLZEeRpA==}
     engines: {node: '>= 0.4'}
 
-  ohash@1.1.4:
-    resolution: {integrity: sha512-FlDryZAahJmEF3VR3w1KogSEdWX3WhA5GPakFx4J81kEAiHyLMpdLLElS8n8dfNadMgAne/MywcvmogzscVt4g==}
+  ohash@1.1.6:
+    resolution: {integrity: sha512-TBu7PtV8YkAZn0tSxobKY2n2aAQva936lhRrj6957aDaCf9IEtqsKbgMzXE/F/sjqYOwmrukeORHNLe5glk7Cg==}
 
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
@@ -2589,6 +2593,7 @@ packages:
 
   oniguruma-to-js@0.4.3:
     resolution: {integrity: sha512-X0jWUcAlxORhOqqBREgPMgnshB7ZGYszBNspP+tS9hPD3l13CdaXcHbgImoHUHlrvGx/7AvFEkTRhAGYh+jzjQ==}
+    deprecated: use oniguruma-to-es instead
 
   ora@8.1.1:
     resolution: {integrity: sha512-YWielGi1XzG1UTvOaCFaNgEnuhZVMSHYkW/FQ7UX8O26PtlpdM84c0f7wLPlkvx2RfiQmnzd61d/MGxmpQeJPw==}
@@ -3062,6 +3067,7 @@ packages:
   sitemap@8.0.0:
     resolution: {integrity: sha512-+AbdxhM9kJsHtruUF39bwS/B0Fytw6Fr1o4ZAIAEqA6cke2xcoO2GleBw9Zw7nRzILVEgz7zBM5GiTJjie1G9A==}
     engines: {node: '>=14.0.0', npm: '>=6.0.0'}
+    deprecated: 'SECURITY: Multiple vulnerabilities fixed in 8.0.1 (XML injection, path traversal, command injection, protocol injection). Upgrade immediately: npm install sitemap@8.0.1'
     hasBin: true
 
   source-map-js@1.2.0:
@@ -3173,6 +3179,7 @@ packages:
   tar@6.2.1:
     resolution: {integrity: sha512-DZ4yORTwrbTj/7MZYq2w+/ZFdI6OZ/f9SFHR+71gIVUZhOQPHzVCLpvRnPgyaMpfWxxk/4ONva3GQSyNIKRv6A==}
     engines: {node: '>=10'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   thenify-all@1.6.0:
     resolution: {integrity: sha512-RNxQH/qI8/t3thXJDwcstUO4zeqo64+Uy/+sNVRBx4Xn2OX+OZ9oP+iJnNFqplFra2ZUVeKCSa2oVWi3T4uVmA==}
@@ -3237,6 +3244,9 @@ packages:
 
   ufo@1.5.4:
     resolution: {integrity: sha512-UsUk3byDzKd04EyoZ7U4DOlxQaD14JUKQl6/P7wiX4FNvUfm3XL246n9W5AmqwW5RSFJ27NAuM0iLscAOYUiGQ==}
+
+  ufo@1.6.4:
+    resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
   undici-types@6.11.1:
     resolution: {integrity: sha512-mIDEX2ek50x0OlRgxryxsenE5XaQD4on5U2inY7RApK3SOJpofyw7uW2AyfMKkhAxXIceo2DeWGVGwyvng1GNQ==}
@@ -4205,7 +4215,7 @@ snapshots:
 
   '@fastify/busboy@2.1.1': {}
 
-  '@iconify-json/tabler@1.1.118':
+  '@iconify-json/tabler@1.2.35':
     dependencies:
       '@iconify/types': 2.0.0
 
@@ -5150,7 +5160,7 @@ snapshots:
       es-errors: 1.3.0
       gopd: 1.1.0
 
-  defu@6.1.4: {}
+  defu@6.1.7: {}
 
   delayed-stream@1.0.0: {}
 
@@ -6454,7 +6464,7 @@ snapshots:
 
   object-inspect@1.13.3: {}
 
-  ohash@1.1.4: {}
+  ohash@1.1.6: {}
 
   once@1.4.0:
     dependencies:
@@ -7243,6 +7253,8 @@ snapshots:
 
   ufo@1.5.4: {}
 
+  ufo@1.6.4: {}
+
   undici-types@6.11.1: {}
 
   undici@5.28.4:
@@ -7251,10 +7263,10 @@ snapshots:
 
   unenv-nightly@2.0.0-20241204-140205-a5d5190:
     dependencies:
-      defu: 6.1.4
-      ohash: 1.1.4
+      defu: 6.1.7
+      ohash: 1.1.6
       pathe: 1.1.2
-      ufo: 1.5.4
+      ufo: 1.6.4
 
   unified@11.0.5:
     dependencies:
