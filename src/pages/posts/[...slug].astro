@@ -1,0 +1,98 @@
+---
+import BaseLayout from "@layouts/BaseLayout.astro";
+import FormattedDate from "@components/FormattedDate.astro";
+import OptimizedCover from "@components/OptimizedPicture.astro";
+import { getEntries, getAsset } from "@lib/contentful.astro";
+import { marked } from "marked";
+
+export async function getStaticPaths() {
+  const posts = await getEntries();
+  return posts["items"]?.map((post) => ({
+    params: { slug: post.sys.id },
+    props: post,
+  }));
+}
+
+const post = Astro.props;
+
+const image = await getAsset(post?.fields?.cover?.["sys"].id);
+const video = post.fields.video?.["sys"].id
+  ? await getAsset(post.fields.video["sys"].id)
+  : null;
+const parsedDescription = marked(
+  typeof post.fields.description === "string" ? post.fields.description : "",
+);
+---
+
+<BaseLayout title={post.fields.title} description={post.fields.description}>
+  <main>
+    <article class="prose mx-auto dark:prose-invert">
+      <!-- Related Posts -->
+      <div class="mt-8">
+        <div class="prose-h1 text-center">
+          <h1 data-pagefind-title={post.fields.title}>{post.fields.title}</h1>
+        </div>
+        <div>
+          {
+            video !== null && video !== undefined ? (
+              <video controls>
+                <source
+                  src={"https://" + video?.fields?.file?.url}
+                  type={video?.fields?.file?.contentType}
+                />
+              </video>
+            ) : (
+              <OptimizedCover
+                src={"https://" + image?.fields?.file?.url}
+                alt="Gambar"
+              />
+            )
+          }
+        </div>
+        <!-- Tombol Download -->
+        {
+          post.fields.downloadlink && (
+            <div class="mb-4 mt-6 flex flex-col items-center">
+              <a
+                href={
+                  typeof post.fields.downloadlink === "string"
+                    ? post.fields.downloadlink
+                    : ""
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                class="rounded-lg bg-neutral-200 px-6 py-3 font-semibold text-black shadow-md transition duration-300 hover:bg-neutral-300"
+              >
+                Download
+              </a>
+            </div>
+          )
+        }
+
+        <div set:html={parsedDescription} />
+
+        <div class="prose-a:no-underline">
+          <!-- {
+            post.data.tags.map((tag) => (
+              <span class="mb-2 mr-2 inline-block rounded-full bg-neutral-200 px-3 py-1 text-sm hover:bg-neutral-500 dark:bg-neutral-600">
+                <a href={`/tags/${tag}/1/`}>{tag}</a>
+              </span>
+            ))
+          } -->
+        </div>
+
+        <div class="flex justify-between">
+          <small>Publish on <FormattedDate date={post.sys.createdAt} /></small>
+        </div>
+      </div>
+      <div class="mt-4">
+        <!-- <RelatedPostsCard
+        currentCategory={post.fields.category} 
+        currentSlug={post.sys.id}
+      /> -->
+      </div>
+    </article>
+  </main>
+</BaseLayout>
+
+;
