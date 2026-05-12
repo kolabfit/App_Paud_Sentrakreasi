@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'childName']) &&
+             data.keys().size() == 4 && // uid, email, childName, createdAt
+             data.uid is string &&
+             data.email is string &&
+             data.childName is string &&
+             data.childName.size() > 0 &&
+             data.childName.size() <= 100;
+    }
+
+    // Rules for users collection
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      request.resource.data.uid == resource.data.uid &&
+                      request.resource.data.email == resource.data.email;
+    }
+
+    // Rules for songs collection
+    match /songs/{songId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+
+    // Rules for objects collection
+    match /objects/{objectId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Information about the user and their child",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "childName": { "type": "string", "description": "Name of the child for personalization" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "childName"]
+    },
+    "Object": {
+      "title": "Learning Object",
+      "description": "A flashcard object with an image",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "category": { "type": "string", "enum": ["benda", "hewan", "buah"] }
+      },
+      "required": ["name", "imageUrl", "category"]
+    },
+    "Song": {
+      "title": "Kids Song",
+      "description": "Information about a song with video and lyrics",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "videoUrl": { "type": "string", "format": "uri" },
+        "lyrics": { "type": "array" }
+      },
+      "required": ["title", "videoUrl"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles keyed by their Auth UID"
+    },
+    "objects/{objectId}": {
+      "schema": "Object",
+      "description": "Stores master list of objects for learning"
+    },
+    "songs/{songId}": {
+      "schema": "Song",
+      "description": "Stores master list of songs"
+    }
+  }
+}
