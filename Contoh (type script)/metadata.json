@@ -1,6 +1,0 @@
-{
-  "name": "Belajar Yuk!",
-  "description": "A fun and interactive learning application for children to learn letters, numbers, objects, and more with a tactile, colorful UI.",
-  "requestFramePermissions": ["microphone"],
-  "majorCapabilities": []
-}
