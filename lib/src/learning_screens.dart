@@ -568,7 +568,9 @@ class MenuButton extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: t.dark ? color.withValues(alpha: .12) : color.withValues(alpha: .08),
+                  color: t.dark
+                      ? color.withValues(alpha: .12)
+                      : color.withValues(alpha: .08),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: color.withValues(alpha: .15)),
                 ),
@@ -764,7 +766,7 @@ class _ModeSeruScreenState extends ConsumerState<ModeSeruScreen> {
                   Expanded(
                     child: Text(widget.title, style: sectionTitle(context)),
                   ),
-                  RewardPill(stars: app.stars, streak: app.streak),
+                  RewardPill(stars: app.stars),
                 ],
               ),
               const SizedBox(height: 18),

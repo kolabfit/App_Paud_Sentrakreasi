@@ -10,7 +10,11 @@ class SongPlayer extends StatelessWidget {
     final t = _themeOf(context);
     return Container(
       padding: const EdgeInsets.all(18),
-      decoration: tactileCard(context, border: t.dark ? const Color(0xffF1C40F) : Colors.pink.shade200, radius: 30),
+      decoration: tactileCard(
+        context,
+        border: t.dark ? const Color(0xffF1C40F) : Colors.pink.shade200,
+        radius: 30,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -21,25 +25,41 @@ class SongPlayer extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (thumb != null) AppImage(url: thumb, fit: BoxFit.cover) else DirectVideo(url: song.videoUrl),
+                  if (thumb != null)
+                    AppImage(url: thumb, fit: BoxFit.cover)
+                  else
+                    DirectVideo(url: song.videoUrl),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Colors.transparent, Colors.black.withValues(alpha: .4)],
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: .4),
+                        ],
                       ),
                     ),
                   ),
                   Center(
                     child: Container(
-                      width: 64, height: 64,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white.withValues(alpha: .9),
-                        boxShadow: [BoxShadow(blurRadius: 20, color: Colors.black.withValues(alpha: .2))],
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 20,
+                            color: Colors.black.withValues(alpha: .2),
+                          ),
+                        ],
                       ),
-                      child: Icon(Icons.play_arrow_rounded, size: 38, color: t.primary),
+                      child: Icon(
+                        Icons.play_arrow_rounded,
+                        size: 38,
+                        color: t.primary,
+                      ),
                     ),
                   ),
                 ],
@@ -47,16 +67,29 @@ class SongPlayer extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Text(song.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+          Text(
+            song.title,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          ),
           AudioBars(color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
-            children: song.lyrics.take(4).map((l) => Chip(
-              label: Text(l.text, style: const TextStyle(fontWeight: FontWeight.w700)),
-              backgroundColor: t.dark ? Colors.white10 : Colors.grey.shade100,
-              side: BorderSide.none,
-            )).toList(),
+            children: song.lyrics
+                .take(4)
+                .map(
+                  (l) => Chip(
+                    label: Text(
+                      l.text,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    backgroundColor: t.dark
+                        ? Colors.white10
+                        : Colors.grey.shade100,
+                    side: BorderSide.none,
+                  ),
+                )
+                .toList(),
           ),
         ],
       ),
@@ -81,20 +114,35 @@ class _DirectVideoState extends State<DirectVideo> {
         ..initialize().then((_) => mounted ? setState(() {}) : null);
     }
   }
+
   @override
-  void dispose() { controller?.dispose(); super.dispose(); }
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = controller;
     if (c == null || !c.value.isInitialized) {
-      return Container(color: Colors.black12, child: const Center(child: Icon(Icons.video_library, size: 64)));
+      return Container(
+        color: Colors.black12,
+        child: const Center(child: Icon(Icons.video_library, size: 64)),
+      );
     }
     return VideoPlayer(c);
   }
 }
 
 class SongTile extends StatelessWidget {
-  const SongTile({required this.song, required this.active, required this.favorite, required this.onTap, required this.onFav, super.key});
+  const SongTile({
+    required this.song,
+    required this.active,
+    required this.favorite,
+    required this.onTap,
+    required this.onFav,
+    super.key,
+  });
   final SongItem song;
   final bool active;
   final bool favorite;
@@ -114,15 +162,26 @@ class SongTile extends StatelessWidget {
           color: active ? t.widgetBorder.withValues(alpha: .1) : t.widgetBg,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: active ? t.widgetBorder : t.widgetBorder.withValues(alpha: .15),
+            color: active
+                ? t.widgetBorder
+                : t.widgetBorder.withValues(alpha: .15),
             width: active ? 2.5 : 1,
           ),
-          boxShadow: active ? [BoxShadow(blurRadius: 12, color: t.widgetBorder.withValues(alpha: .15), offset: const Offset(0, 4))] : [],
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    blurRadius: 12,
+                    color: t.widgetBorder.withValues(alpha: .15),
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
         ),
         child: Row(
           children: [
             Container(
-              width: 48, height: 48,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: t.primary.withValues(alpha: .12),
                 borderRadius: BorderRadius.circular(16),
@@ -134,14 +193,28 @@ class SongTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(song.title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-                  Text(song.videoUrl, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: muted(context))),
+                  Text(
+                    song.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    song.videoUrl,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: muted(context)),
+                  ),
                 ],
               ),
             ),
             IconButton(
               onPressed: onFav,
-              icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: favorite ? Colors.redAccent : muted(context)),
+              icon: Icon(
+                favorite ? Icons.favorite : Icons.favorite_border,
+                color: favorite ? Colors.redAccent : muted(context),
+              ),
             ),
           ],
         ),
@@ -151,7 +224,14 @@ class SongTile extends StatelessWidget {
 }
 
 class LessonCard extends StatelessWidget {
-  const LessonCard({required this.title, required this.subtitle, required this.onSpeak, this.image, this.footer, super.key});
+  const LessonCard({
+    required this.title,
+    required this.subtitle,
+    required this.onSpeak,
+    this.image,
+    this.footer,
+    super.key,
+  });
   final String title;
   final String subtitle;
   final String? image;
@@ -167,11 +247,31 @@ class LessonCard extends StatelessWidget {
         decoration: tactileCard(context, radius: 38),
         child: Column(
           children: [
-            Expanded(child: image == null ? const EmptyState(text: 'Gambar belum diupload pengajar.') : AppImage(url: image!, fit: BoxFit.contain)),
-            Text(title, style: TextStyle(fontSize: 84, height: .92, fontWeight: FontWeight.w900, color: Theme.of(context).colorScheme.primary)).animate().scale(duration: 260.ms),
-            Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+            Expanded(
+              child: image == null
+                  ? const EmptyState(text: 'Gambar belum diupload pengajar.')
+                  : AppImage(url: image!, fit: BoxFit.contain),
+            ),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 84,
+                height: .92,
+                fontWeight: FontWeight.w900,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ).animate().scale(duration: 260.ms),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 10),
-            FilledButton.icon(onPressed: onSpeak, icon: const Icon(Icons.volume_up), label: const Text('Dengarkan')),
+            FilledButton.icon(
+              onPressed: onSpeak,
+              icon: const Icon(Icons.volume_up),
+              label: const Text('Dengarkan'),
+            ),
             if (footer != null) ...[const SizedBox(height: 10), footer!],
           ],
         ),
@@ -181,7 +281,13 @@ class LessonCard extends StatelessWidget {
 }
 
 class LessonMiniCard extends StatelessWidget {
-  const LessonMiniCard({required this.title, required this.subtitle, this.image, this.badge, super.key});
+  const LessonMiniCard({
+    required this.title,
+    required this.subtitle,
+    this.image,
+    this.badge,
+    super.key,
+  });
   final String title;
   final String subtitle;
   final String? image;
@@ -194,10 +300,31 @@ class LessonMiniCard extends StatelessWidget {
       decoration: cardDecoration(context),
       child: Column(
         children: [
-          Expanded(child: image == null ? const Icon(Icons.image_not_supported, size: 48) : AppImage(url: image!, fit: BoxFit.contain)),
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: title.length <= 2 ? 48 : 24, fontWeight: FontWeight.w900)),
-          Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: muted(context), fontWeight: FontWeight.w800)),
-          if (badge != null) Wrap(alignment: WrapAlignment.center, spacing: 4, children: badge!),
+          Expanded(
+            child: image == null
+                ? const Icon(Icons.image_not_supported, size: 48)
+                : AppImage(url: image!, fit: BoxFit.contain),
+          ),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: title.length <= 2 ? 48 : 24,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: muted(context),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (badge != null)
+            Wrap(alignment: WrapAlignment.center, spacing: 4, children: badge!),
         ],
       ),
     );
@@ -205,7 +332,15 @@ class LessonMiniCard extends StatelessWidget {
 }
 
 class FeatureTile extends StatelessWidget {
-  const FeatureTile({required this.title, required this.subtitle, required this.color, required this.onTap, this.asset, this.icon, super.key});
+  const FeatureTile({
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+    this.asset,
+    this.icon,
+    super.key,
+  });
   final String title;
   final String subtitle;
   final String? asset;
@@ -225,20 +360,39 @@ class FeatureTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(26),
           border: Border.all(color: color.withValues(alpha: .22), width: 2),
           boxShadow: [
-            BoxShadow(offset: const Offset(0, 5), blurRadius: 0, color: color.withValues(alpha: .12)),
-            BoxShadow(blurRadius: 14, offset: const Offset(0, 6), color: Colors.black.withValues(alpha: t.dark ? .12 : .04)),
+            BoxShadow(
+              offset: const Offset(0, 5),
+              blurRadius: 0,
+              color: color.withValues(alpha: .12),
+            ),
+            BoxShadow(
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+              color: Colors.black.withValues(alpha: t.dark ? .12 : .04),
+            ),
           ],
         ),
         child: Row(
           children: [
             Container(
-              width: 68, height: 68,
+              width: 68,
+              height: 68,
               decoration: BoxDecoration(
-                color: t.dark ? color.withValues(alpha: .15) : color.withValues(alpha: .1),
+                color: t.dark
+                    ? color.withValues(alpha: .15)
+                    : color.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withValues(alpha: .2), width: 1.5),
+                border: Border.all(
+                  color: color.withValues(alpha: .2),
+                  width: 1.5,
+                ),
               ),
-              child: asset != null ? Padding(padding: const EdgeInsets.all(10), child: Image.asset(asset!, fit: BoxFit.contain)) : Icon(icon, size: 36, color: color),
+              child: asset != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Image.asset(asset!, fit: BoxFit.contain),
+                    )
+                  : Icon(icon, size: 36, color: color),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -246,19 +400,38 @@ class FeatureTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: t.dark ? Colors.white : Colors.grey.shade800)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: t.dark ? Colors.white : Colors.grey.shade800,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: TextStyle(color: muted(context), fontWeight: FontWeight.w700, fontSize: 13)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: muted(context),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
             Container(
-              width: 36, height: 36,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: .1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.arrow_forward_ios_rounded, color: color, size: 16),
+              child: Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: color,
+                size: 16,
+              ),
             ),
           ],
         ),
@@ -268,7 +441,11 @@ class FeatureTile extends StatelessWidget {
 }
 
 class ProgressOverview extends StatelessWidget {
-  const ProgressOverview({required this.progress, required this.compact, super.key});
+  const ProgressOverview({
+    required this.progress,
+    required this.compact,
+    super.key,
+  });
   final Map<String, int> progress;
   final bool compact;
 
@@ -276,8 +453,10 @@ class ProgressOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = _themeOf(context);
     // Ignore mode_seru if it still exists in old state
-    final entries = progress.entries.where((e) => e.key != 'mode_seru').toList();
-    
+    final entries = progress.entries
+        .where((e) => e.key != 'mode_seru')
+        .toList();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: tactileCard(context, radius: 28),
@@ -294,14 +473,20 @@ class ProgressOverview extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      width: 42, height: 42,
+                      width: 42,
+                      height: 42,
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: t.dark ? color.withValues(alpha: .2) : color.withValues(alpha: .1),
+                        color: t.dark
+                            ? color.withValues(alpha: .2)
+                            : color.withValues(alpha: .1),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: color.withValues(alpha: .3)),
                       ),
-                      child: Image.asset(_assetForCategory(cat), fit: BoxFit.contain),
+                      child: Image.asset(
+                        _assetForCategory(cat),
+                        fit: BoxFit.contain,
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -314,7 +499,9 @@ class ProgressOverview extends StatelessWidget {
                               fontWeight: FontWeight.w900,
                               fontSize: 14,
                               letterSpacing: 1.5,
-                              color: t.dark ? Colors.white : Colors.grey.shade800,
+                              color: t.dark
+                                  ? Colors.white
+                                  : Colors.grey.shade800,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -332,7 +519,10 @@ class ProgressOverview extends StatelessWidget {
                     ),
                     const SizedBox(width: 14),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: color,
                         borderRadius: BorderRadius.circular(16),
@@ -373,7 +563,12 @@ class ProgressOverview extends StatelessWidget {
 }
 
 class HeroPanel extends ConsumerWidget {
-  const HeroPanel({required this.title, required this.subtitle, required this.asset, super.key});
+  const HeroPanel({
+    required this.title,
+    required this.subtitle,
+    required this.asset,
+    super.key,
+  });
   final String title;
   final String subtitle;
   final String asset;
@@ -388,8 +583,18 @@ class HeroPanel extends ConsumerWidget {
         borderRadius: BorderRadius.circular(34),
         color: t.widgetBg,
         border: Border.all(color: t.widgetBorder, width: 2),
-        image: DecorationImage(image: AssetImage(asset), fit: BoxFit.cover, opacity: t.dark ? .1 : .18),
-        boxShadow: [BoxShadow(blurRadius: 20, offset: const Offset(0, 10), color: t.widgetBorder.withValues(alpha: .15))],
+        image: DecorationImage(
+          image: AssetImage(asset),
+          fit: BoxFit.cover,
+          opacity: t.dark ? .1 : .18,
+        ),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            color: t.widgetBorder.withValues(alpha: .15),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -398,20 +603,38 @@ class HeroPanel extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(title, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: t.dark ? Colors.white : const Color(0xff263238), letterSpacing: -.5)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
+                    color: t.dark ? Colors.white : const Color(0xff263238),
+                    letterSpacing: -.5,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text(subtitle, style: TextStyle(fontWeight: FontWeight.w800, color: muted(context), fontSize: 14)),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: muted(context),
+                    fontSize: 14,
+                  ),
+                ),
               ],
             ),
           ),
           Container(
-            width: 80, height: 80,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              color: t.widgetBorder.withValues(alpha: .1),
-            ),
-            child: Image.asset(asset, fit: BoxFit.contain),
-          ).animate(onPlay: (c) => c.repeat(reverse: true)).moveY(begin: -5, end: 5, duration: 1800.ms),
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  color: t.widgetBorder.withValues(alpha: .1),
+                ),
+                child: Image.asset(asset, fit: BoxFit.contain),
+              )
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .moveY(begin: -5, end: 5, duration: 1800.ms),
         ],
       ),
     );
@@ -419,7 +642,15 @@ class HeroPanel extends ConsumerWidget {
 }
 
 class AppField extends StatelessWidget {
-  const AppField({required this.controller, required this.label, required this.icon, this.hint, this.obscure = false, this.suffix, super.key});
+  const AppField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.hint,
+    this.obscure = false,
+    this.suffix,
+    super.key,
+  });
   final TextEditingController controller;
   final String label;
   final IconData icon;
@@ -442,9 +673,18 @@ class AppField extends StatelessWidget {
           suffixIcon: suffix,
           filled: true,
           fillColor: t.widgetBg,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide(color: t.widgetBorder.withValues(alpha: .2))),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide(color: t.widgetBorder, width: 2)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(22),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(22),
+            borderSide: BorderSide(color: t.widgetBorder.withValues(alpha: .2)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(22),
+            borderSide: BorderSide(color: t.widgetBorder, width: 2),
+          ),
         ),
       ),
     );
@@ -458,9 +698,12 @@ class AppImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CachedNetworkImage(
-      imageUrl: url, fit: fit,
-      placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
-      errorWidget: (context, url, error) => const EmptyState(text: 'Gambar belum tersedia.'),
+      imageUrl: url,
+      fit: fit,
+      placeholder: (context, url) =>
+          const Center(child: CircularProgressIndicator()),
+      errorWidget: (context, url, error) =>
+          const EmptyState(text: 'Gambar belum tersedia.'),
     );
   }
 }
@@ -488,7 +731,8 @@ class PagePad extends StatelessWidget {
   const PagePad({required this.child, super.key});
   final Widget child;
   @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.fromLTRB(18, 18, 18, 0), child: child);
+  Widget build(BuildContext context) =>
+      Padding(padding: const EdgeInsets.fromLTRB(18, 18, 18, 0), child: child);
 }
 
 class ResponsiveGrid extends StatelessWidget {
@@ -541,20 +785,32 @@ class HeroMascot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
-        width: 132, height: 132,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: cardColor(context),
-          borderRadius: BorderRadius.circular(34),
-          border: Border.all(color: color, width: 4),
-          boxShadow: [
-            BoxShadow(offset: const Offset(0, 8), blurRadius: 0, color: color.withValues(alpha: .3)),
-            BoxShadow(blurRadius: 24, offset: const Offset(0, 12), color: Colors.black.withValues(alpha: .08)),
-          ],
-        ),
-        child: Image.asset(asset, fit: BoxFit.contain),
-      ).animate(onPlay: (c) => c.repeat(reverse: true)).moveY(begin: -7, end: 7),
+      child:
+          Container(
+                width: 132,
+                height: 132,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cardColor(context),
+                  borderRadius: BorderRadius.circular(34),
+                  border: Border.all(color: color, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      offset: const Offset(0, 8),
+                      blurRadius: 0,
+                      color: color.withValues(alpha: .3),
+                    ),
+                    BoxShadow(
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                      color: Colors.black.withValues(alpha: .08),
+                    ),
+                  ],
+                ),
+                child: Image.asset(asset, fit: BoxFit.contain),
+              )
+              .animate(onPlay: (c) => c.repeat(reverse: true))
+              .moveY(begin: -7, end: 7),
     );
   }
 }
@@ -570,7 +826,14 @@ class EmptyState extends StatelessWidget {
         children: [
           Icon(Icons.cloud_upload_outlined, size: 52, color: muted(context)),
           const SizedBox(height: 8),
-          Text(text, textAlign: TextAlign.center, style: TextStyle(color: muted(context), fontWeight: FontWeight.w800)),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: muted(context),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );
@@ -578,9 +841,8 @@ class EmptyState extends StatelessWidget {
 }
 
 class RewardPill extends StatelessWidget {
-  const RewardPill({required this.stars, required this.streak, super.key});
+  const RewardPill({required this.stars, super.key});
   final int stars;
-  final int streak;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -591,9 +853,6 @@ class RewardPill extends StatelessWidget {
         children: [
           const Icon(Icons.star_rounded, color: Colors.amber, size: 22),
           Text(' $stars', style: const TextStyle(fontWeight: FontWeight.w900)),
-          const SizedBox(width: 14),
-          const Icon(Icons.local_fire_department_rounded, color: Colors.deepOrange, size: 22),
-          Text(' $streak hari', style: const TextStyle(fontWeight: FontWeight.w900)),
         ],
       ),
     );
@@ -613,7 +872,10 @@ class AdminForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 14),
           ...children,
         ],
@@ -623,7 +885,14 @@ class AdminForm extends StatelessWidget {
 }
 
 class AdminRow extends StatelessWidget {
-  const AdminRow({required this.title, required this.subtitle, required this.onDelete, this.image, this.icon, super.key});
+  const AdminRow({
+    required this.title,
+    required this.subtitle,
+    required this.onDelete,
+    this.image,
+    this.icon,
+    super.key,
+  });
   final String title;
   final String subtitle;
   final String? image;
@@ -636,10 +905,20 @@ class AdminRow extends StatelessWidget {
       child: ListTile(
         leading: image == null
             ? CircleAvatar(child: Icon(icon ?? Icons.image))
-            : ClipRRect(borderRadius: BorderRadius.circular(12), child: SizedBox(width: 54, height: 54, child: AppImage(url: image!))),
+            : ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 54,
+                  height: 54,
+                  child: AppImage(url: image!),
+                ),
+              ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
         subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
-        trailing: IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline)),
+        trailing: IconButton(
+          onPressed: onDelete,
+          icon: const Icon(Icons.delete_outline),
+        ),
       ),
     );
   }
@@ -651,16 +930,22 @@ class AudioBars extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: List.generate(18, (i) => Expanded(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          height: 12 + (i % 5) * 5,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: .2 + (i % 4) * .14),
-            borderRadius: BorderRadius.circular(99),
-          ),
-        ).animate(onPlay: (c) => c.repeat(reverse: true)).scaleY(begin: .45, end: 1, duration: (420 + i * 30).ms),
-      )),
+      children: List.generate(
+        18,
+        (i) => Expanded(
+          child:
+              Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    height: 12 + (i % 5) * 5,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: .2 + (i % 4) * .14),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scaleY(begin: .45, end: 1, duration: (420 + i * 30).ms),
+        ),
+      ),
     );
   }
 }

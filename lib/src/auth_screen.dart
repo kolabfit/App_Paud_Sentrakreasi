@@ -1,149 +1,350 @@
 part of '../main.dart';
 
-// ═══════════════════════════════════════════════════════════════
-//  CHILD-FRIENDLY AUTH FLOW
-//  Step-by-step, one question per screen
-// ═══════════════════════════════════════════════════════════════
+enum _AuthMode { login, register }
 
-enum _AuthPhase { welcome, loginEmail, loginPass, regName, regEmail, regPass }
+class OnboardingScreen extends ConsumerStatefulWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+  final page = PageController();
+  int index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = ref.watch(appStateProvider).theme;
+    final slides = [
+      (
+        'Selamat datang di Belajar Yuk!',
+        'Belajar sambil bermain setiap hari.',
+        Icons.waving_hand_rounded,
+        'assets/images/Anak_hebat.png',
+      ),
+      (
+        'Mode Seru dengan suara',
+        'Ucapkan jawaban, dapatkan reward.',
+        Icons.mic_rounded,
+        'assets/images/Logo_Membaca.png',
+      ),
+      (
+        'Lagu anak interaktif',
+        'Bernyanyi, bergerak, dan tetap fokus.',
+        Icons.music_note_rounded,
+        'assets/images/Logo_Lagu.png',
+      ),
+      (
+        'Tracking progress belajar',
+        'Ayah, Bunda, dan Pengajar mudah memantau.',
+        Icons.insights_rounded,
+        'assets/images/Logo_123.png',
+      ),
+    ];
+
+    return Scaffold(
+      body: ThemedBackground(
+        child: Stack(
+          children: [
+            const _FloatingShapes(),
+            SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: PageView.builder(
+                      controller: page,
+                      onPageChanged: (v) => setState(() => index = v),
+                      itemCount: slides.length,
+                      itemBuilder: (_, i) {
+                        final s = slides[i];
+                        return Padding(
+                          padding: const EdgeInsets.all(26),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _GlassCard(
+                                child: Column(
+                                  children: [
+                                    Icon(s.$3, color: t.primary, size: 42),
+                                    const SizedBox(height: 14),
+                                    Image.asset(
+                                          s.$4,
+                                          height: 210,
+                                          fit: BoxFit.contain,
+                                        )
+                                        .animate(
+                                          onPlay: (c) =>
+                                              c.repeat(reverse: true),
+                                        )
+                                        .moveY(
+                                          begin: -8,
+                                          end: 8,
+                                          duration: 1800.ms,
+                                        ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+                              Text(
+                                s.$1,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w900,
+                                  height: 1.1,
+                                  color: t.dark
+                                      ? Colors.white
+                                      : const Color(0xff143447),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                s.$2,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: muted(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(slides.length, (i) {
+                      final active = i == index;
+                      return AnimatedContainer(
+                        duration: 220.ms,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: active ? 26 : 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: active
+                              ? t.primary
+                              : t.primary.withValues(alpha: .25),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                      );
+                    }),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: FilledButton.icon(
+                      onPressed: () =>
+                          ref.read(appStateProvider).completeOnboarding(),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: const Text('Mulai Belajar'),
+                      style: bigButton(t.primary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
+
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
 class _AuthScreenState extends ConsumerState<AuthScreen> {
-  final email = TextEditingController();
+  final username = TextEditingController();
   final pass = TextEditingController();
-  final name = TextEditingController();
-  bool teacher = false;
+  _AuthMode mode = _AuthMode.login;
+  Gender gender = Gender.boy;
   bool showPass = false;
   bool loading = false;
   String? error;
-  _AuthPhase phase = _AuthPhase.welcome;
-
-  void _goPhase(_AuthPhase p) => setState(() { phase = p; error = null; });
 
   @override
   Widget build(BuildContext context) {
     final t = ref.watch(appStateProvider).theme;
+    final register = mode == _AuthMode.register;
     return Scaffold(
       body: ThemedBackground(
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: 350.ms,
-            transitionBuilder: (child, anim) => FadeTransition(
-              opacity: anim,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0.08, 0),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-                child: child,
-              ),
-            ),
-            child: KeyedSubtree(
-              key: ValueKey(phase),
-              child: switch (phase) {
-                _AuthPhase.welcome    => _buildWelcome(t),
-                _AuthPhase.loginEmail => _buildStep(t, 'Halo lagi! 👋', 'Minta Ayah/Bunda ketik email ya...', Icons.mail_rounded, email, 'Email', false, () => _goPhase(_AuthPhase.loginPass)),
-                _AuthPhase.loginPass  => _buildStep(t, 'Satu langkah lagi! 🔐', 'Minta Ayah/Bunda ketik password...', Icons.lock_rounded, pass, 'Password', true, _submitLogin),
-                _AuthPhase.regName    => _buildStep(t, 'Siapa nama kamu? 🧒', 'Tulis nama jagoan kecil di sini!', Icons.child_care_rounded, name, 'Nama Anak', false, () => _goPhase(_AuthPhase.regEmail)),
-                _AuthPhase.regEmail   => _buildStep(t, 'Email Ayah/Bunda 📧', 'Minta Ayah/Bunda ketik email ya...', Icons.mail_rounded, email, 'Email', false, () => _goPhase(_AuthPhase.regPass)),
-                _AuthPhase.regPass    => _buildStep(t, 'Buat Password 🔑', 'Minta Ayah/Bunda buat password (min 6 huruf)', Icons.lock_rounded, pass, 'Password', true, _submitRegister),
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── WELCOME SCREEN ──────────────────────
-  Widget _buildWelcome(AppThemeData t) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
+        child: Stack(
           children: [
-            // Mascot
-            Container(
-              width: 160, height: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(48),
-                color: t.widgetBg,
-                border: Border.all(color: t.widgetBorder, width: 4),
-                boxShadow: [
-                  BoxShadow(offset: const Offset(0, 10), blurRadius: 0, color: t.widgetBorder.withValues(alpha: .25)),
-                  BoxShadow(blurRadius: 30, color: t.primary.withValues(alpha: .12)),
-                ],
-              ),
-              padding: const EdgeInsets.all(18),
-              child: Image.asset('assets/images/Anak_hebat.png', fit: BoxFit.contain),
-            )
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .moveY(begin: -10, end: 10, duration: 2200.ms),
-            const SizedBox(height: 32),
-
-            Text(
-              'Apakah aku\nkenal kamu? 🤔',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w900,
-                color: t.dark ? Colors.white : const Color(0xff263238),
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Pilih salah satu ya!',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: muted(context),
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 36),
-
-            // Iya button
-            _WelcomeButton(
-              label: 'Iya! Aku sudah punya akun 😄',
-              color: const Color(0xff27AE60),
-              icon: Icons.emoji_emotions_rounded,
-              theme: t,
-              onTap: () => _goPhase(_AuthPhase.loginEmail),
-            ),
-            const SizedBox(height: 16),
-
-            // Tidak button
-            _WelcomeButton(
-              label: 'Belum! Aku mau daftar baru 🌟',
-              color: const Color(0xff3498DB),
-              icon: Icons.person_add_rounded,
-              theme: t,
-              onTap: () => _goPhase(_AuthPhase.regName),
-            ),
-            const SizedBox(height: 28),
-
-            // Teacher mode toggle
-            TextButton.icon(
-              onPressed: () {
-                setState(() => teacher = !teacher);
-                if (teacher) _goPhase(_AuthPhase.loginEmail);
-              },
-              icon: Icon(
-                Icons.admin_panel_settings_rounded,
-                size: 18,
-                color: t.dark ? Colors.white38 : Colors.grey.shade400,
-              ),
-              label: Text(
-                'Khusus Guru / Admin',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  color: t.dark ? Colors.white38 : Colors.grey.shade400,
+            const _FloatingShapes(),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Column(
+                      children: [
+                        _MascotHero(theme: t, register: register),
+                        const SizedBox(height: 18),
+                        Text(
+                          register
+                              ? 'Create your new account'
+                              : 'Welcome back!',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: t.dark
+                                ? Colors.white
+                                : const Color(0xff12384a),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          register
+                              ? 'Username, password, lalu pilih avatar.'
+                              : 'Login untuk lanjut berpetualang.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: muted(context),
+                          ),
+                        ),
+                        const SizedBox(height: 22),
+                        _GlassCard(
+                          child: Column(
+                            children: [
+                              AppField(
+                                controller: username,
+                                label: 'Username',
+                                icon: Icons.person_rounded,
+                                hint: 'contoh: budi_ceria',
+                              ),
+                              AppField(
+                                controller: pass,
+                                label: 'Password',
+                                icon: Icons.lock_rounded,
+                                hint: 'minimal 6 karakter',
+                                obscure: !showPass,
+                                suffix: IconButton(
+                                  onPressed: () =>
+                                      setState(() => showPass = !showPass),
+                                  icon: Icon(
+                                    showPass
+                                        ? Icons.visibility_off_rounded
+                                        : Icons.visibility_rounded,
+                                  ),
+                                ),
+                              ),
+                              if (register) ...[
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _GenderCard(
+                                        label: 'Laki-laki',
+                                        gender: Gender.boy,
+                                        selected: gender == Gender.boy,
+                                        onTap: () =>
+                                            setState(() => gender = Gender.boy),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _GenderCard(
+                                        label: 'Perempuan',
+                                        gender: Gender.girl,
+                                        selected: gender == Gender.girl,
+                                        onTap: () => setState(
+                                          () => gender = Gender.girl,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              if (error != null) ...[
+                                const SizedBox(height: 12),
+                                _ErrorBox(error!),
+                              ],
+                              const SizedBox(height: 16),
+                              FilledButton.icon(
+                                onPressed: loading ? null : _submit,
+                                icon: loading
+                                    ? const SizedBox.square(
+                                        dimension: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : Icon(
+                                        register
+                                            ? Icons.person_add_rounded
+                                            : Icons.login_rounded,
+                                      ),
+                                label: Text(register ? 'Register' : 'Login'),
+                                style: bigButton(t.primary),
+                              ),
+                              const SizedBox(height: 16),
+                              _DividerLabel(
+                                label: register
+                                    ? 'Or sign up with'
+                                    : 'Or login with',
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _SocialButton(
+                                      label: 'Google',
+                                      icon: Icons.g_mobiledata_rounded,
+                                      onTap: () => _social('google'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _SocialButton(
+                                      label: 'Phone',
+                                      icon: Icons.phone_rounded,
+                                      onTap: () => _social('phone'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _SocialButton(
+                                      label: 'Apple',
+                                      icon: Icons.apple_rounded,
+                                      onTap: () => _social('apple'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        TextButton(
+                          onPressed: () => setState(() {
+                            mode = register
+                                ? _AuthMode.login
+                                : _AuthMode.register;
+                            error = null;
+                          }),
+                          child: Text(
+                            register
+                                ? 'Sudah punya akun? Login'
+                                : 'Belum punya akun? Register',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: t.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -153,164 +354,26 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     );
   }
 
-  // ─── SINGLE STEP SCREEN ──────────────────────
-  Widget _buildStep(
-    AppThemeData t,
-    String title,
-    String subtitle,
-    IconData icon,
-    TextEditingController controller,
-    String fieldLabel,
-    bool isPassword,
-    VoidCallback onNext,
-  ) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(28),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440),
-          child: Column(
-            children: [
-              // Icon bubble
-              Container(
-                width: 90, height: 90,
-                decoration: BoxDecoration(
-                  color: t.primary.withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: t.primary.withValues(alpha: .2), width: 2),
-                ),
-                child: Icon(icon, size: 42, color: t.primary),
-              ).animate().scale(duration: 300.ms, curve: Curves.elasticOut),
-              const SizedBox(height: 24),
-
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  color: t.dark ? Colors.white : const Color(0xff263238),
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: muted(context),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Input card
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: tactileCard(context, radius: 28),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: controller,
-                      obscureText: isPassword && !showPass,
-                      autofocus: true,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: isPassword ? 18 : 22,
-                        fontWeight: FontWeight.w900,
-                        color: t.dark ? Colors.white : const Color(0xff263238),
-                      ),
-                      decoration: InputDecoration(
-                        hintText: fieldLabel,
-                        hintStyle: TextStyle(
-                          color: muted(context),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        filled: true,
-                        fillColor: t.dark ? Colors.white.withValues(alpha: .05) : Colors.grey.shade50,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                        suffixIcon: isPassword
-                            ? IconButton(
-                                icon: Icon(showPass ? Icons.visibility_off : Icons.visibility),
-                                onPressed: () => setState(() => showPass = !showPass),
-                              )
-                            : null,
-                      ),
-                      onSubmitted: (_) => onNext(),
-                    ),
-
-                    if (error != null) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.red.shade200),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(error!, style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.w800, fontSize: 12))),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 18),
-                    FilledButton.icon(
-                      onPressed: loading ? null : onNext,
-                      icon: loading
-                          ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.arrow_forward_rounded),
-                      label: Text(isPassword ? (phase == _AuthPhase.loginPass ? 'Masuk!' : 'Daftar!') : 'Lanjut'),
-                      style: bigButton(t.primary),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 18),
-              // Back button
-              TextButton.icon(
-                onPressed: () {
-                  if (phase == _AuthPhase.loginEmail || phase == _AuthPhase.regName) {
-                    _goPhase(_AuthPhase.welcome);
-                  } else if (phase == _AuthPhase.loginPass) {
-                    _goPhase(_AuthPhase.loginEmail);
-                  } else if (phase == _AuthPhase.regEmail) {
-                    _goPhase(_AuthPhase.regName);
-                  } else if (phase == _AuthPhase.regPass) {
-                    _goPhase(_AuthPhase.regEmail);
-                  }
-                },
-                icon: Icon(Icons.arrow_back_rounded, size: 18, color: muted(context)),
-                label: Text('Kembali', style: TextStyle(color: muted(context), fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── SUBMIT ACTIONS ──────────────────────
-  Future<void> _submitLogin() async {
-    if (email.text.trim().isEmpty) return setState(() => error = 'Email belum diisi');
-    if (pass.text.length < 6) return setState(() => error = 'Password minimal 6 karakter');
-    setState(() { loading = true; error = null; });
+  Future<void> _submit() async {
+    if (username.text.trim().length < 3) {
+      return setState(() => error = 'Username minimal 3 karakter');
+    }
+    if (pass.text.length < 6) {
+      return setState(() => error = 'Password minimal 6 karakter');
+    }
+    setState(() {
+      loading = true;
+      error = null;
+    });
     try {
-      await ref.read(appStateProvider).login(
-        nextEmail: email.text.trim(),
-        password: pass.text,
-        teacherMode: teacher,
-      );
+      await ref
+          .read(appStateProvider)
+          .login(
+            nextEmail: username.text,
+            password: pass.text,
+            name: mode == _AuthMode.register ? username.text : null,
+            nextGender: gender,
+          );
     } catch (e) {
       setState(() => error = e.toString());
     } finally {
@@ -318,83 +381,315 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     }
   }
 
-  Future<void> _submitRegister() async {
-    if (name.text.trim().isEmpty) return setState(() => error = 'Nama belum diisi');
-    if (email.text.trim().isEmpty) return setState(() => error = 'Email belum diisi');
-    if (pass.text.length < 6) return setState(() => error = 'Password minimal 6 karakter');
-    setState(() { loading = true; error = null; });
-    try {
-      await ref.read(appStateProvider).login(
-        nextEmail: email.text.trim(),
-        password: pass.text,
-        teacherMode: false,
-        name: name.text.trim(),
-      );
-    } catch (e) {
-      setState(() => error = e.toString());
-    } finally {
-      if (mounted) setState(() => loading = false);
-    }
+  Future<void> _social(String provider) async {
+    Feedback.forTap(context);
+    final name = provider == 'phone' ? 'nomor_hp_user' : '${provider}_user';
+    username.text = name;
+    pass.text = 'social123';
+    await _submit();
   }
 }
 
-// ─── Welcome choice button ──────────────────────
-class _WelcomeButton extends StatelessWidget {
-  const _WelcomeButton({
+class _MascotHero extends StatelessWidget {
+  const _MascotHero({required this.theme, required this.register});
+  final AppThemeData theme;
+  final bool register;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 190,
+          height: 120,
+          decoration: BoxDecoration(
+            color: theme.primary.withValues(alpha: .16),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(90),
+              top: Radius.circular(40),
+            ),
+          ),
+        ),
+        Container(
+              width: 140,
+              height: 140,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.widgetBg,
+                borderRadius: BorderRadius.circular(44),
+                border: Border.all(color: theme.widgetBorder, width: 4),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 28,
+                    color: theme.primary.withValues(alpha: .24),
+                  ),
+                ],
+              ),
+              child: Image.asset(
+                register ? 'assets/images/Anak_hebat.png' : theme.asset,
+                fit: BoxFit.contain,
+              ),
+            )
+            .animate(onPlay: (c) => c.repeat(reverse: true))
+            .moveY(begin: -7, end: 7, duration: 1700.ms),
+      ],
+    );
+  }
+}
+
+class _GenderCard extends StatelessWidget {
+  const _GenderCard({
     required this.label,
-    required this.color,
-    required this.icon,
-    required this.theme,
+    required this.gender,
+    required this.selected,
     required this.onTap,
   });
   final String label;
-  final Color color;
-  final IconData icon;
-  final AppThemeData theme;
+  final Gender gender;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final color = gender == Gender.boy
+        ? const Color(0xff1D9BF0)
+        : const Color(0xffF15BB5);
     return GestureDetector(
+      onTap: () {
+        Feedback.forTap(context);
+        onTap();
+      },
+      child:
+          AnimatedContainer(
+                duration: 220.ms,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? color.withValues(alpha: .13)
+                      : cardColor(context),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected ? color : color.withValues(alpha: .2),
+                    width: selected ? 2.5 : 1.2,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            blurRadius: 18,
+                            color: color.withValues(alpha: .35),
+                          ),
+                        ]
+                      : softShadow,
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      gender == Gender.boy
+                          ? Icons.face_5_rounded
+                          : Icons.face_3_rounded,
+                      color: color,
+                      size: 34,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: selected ? color : muted(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate(target: selected ? 1 : 0)
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(1.04, 1.04),
+                duration: 180.ms,
+              ),
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 380),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      child: Ink(
+        height: 50,
         decoration: BoxDecoration(
-          color: theme.widgetBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.withValues(alpha: .3), width: 2.5),
-          boxShadow: [
-            BoxShadow(offset: const Offset(0, 7), blurRadius: 0, color: color.withValues(alpha: .15)),
-            BoxShadow(blurRadius: 16, offset: const Offset(0, 8), color: Colors.black.withValues(alpha: theme.dark ? .15 : .04)),
-          ],
+          color: cardColor(context),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: muted(context).withValues(alpha: .18)),
+          boxShadow: softShadow,
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 52, height: 52,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: .12),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
+            Icon(icon, size: 23),
+            const SizedBox(width: 5),
+            Flexible(
               child: Text(
                 label,
-                style: TextStyle(
-                  fontSize: 16,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: theme.dark ? Colors.white : Colors.grey.shade800,
                 ),
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: color),
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms).slideX(begin: .05);
+    ).animate().fadeIn(duration: 280.ms).slideY(begin: .08);
+  }
+}
+
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: t.widgetBg.withValues(alpha: t.dark ? .72 : .82),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: t.dark ? .12 : .55),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 28,
+                offset: const Offset(0, 14),
+                color: Colors.black.withValues(alpha: t.dark ? .25 : .08),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _DividerLabel extends StatelessWidget {
+  const _DividerLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Divider(color: muted(context).withValues(alpha: .25))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: muted(context),
+            ),
+          ),
+        ),
+        Expanded(child: Divider(color: muted(context).withValues(alpha: .25))),
+      ],
+    );
+  }
+}
+
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Colors.red.shade700,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingShapes extends StatelessWidget {
+  const _FloatingShapes();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Stack(
+          children: List.generate(12, (i) {
+            final left = (i * 67) % 360;
+            final top = 30.0 + ((i * 91) % 720);
+            final size = 18.0 + (i % 4) * 10;
+            return Positioned(
+              left: left.toDouble(),
+              top: top,
+              child:
+                  Container(
+                        width: size,
+                        height: size,
+                        decoration: BoxDecoration(
+                          color: [
+                            t.primary,
+                            t.secondary,
+                            t.accent,
+                          ][i % 3].withValues(alpha: .12),
+                          shape: i.isEven
+                              ? BoxShape.circle
+                              : BoxShape.rectangle,
+                          borderRadius: i.isEven
+                              ? null
+                              : BorderRadius.circular(10),
+                        ),
+                      )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .moveY(begin: -8, end: 8, duration: (1600 + i * 140).ms),
+            );
+          }),
+        ),
+      ),
+    );
   }
 }

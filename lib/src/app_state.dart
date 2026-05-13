@@ -4,6 +4,8 @@ final appStateProvider = ChangeNotifierProvider<AppState>((ref) => AppState());
 
 enum Role { child, teacher }
 
+enum Gender { boy, girl }
+
 enum TabItem { main, belajar, lagu, akun }
 
 enum LearnMode { menu, huruf, angka, benda, iqra }
@@ -16,8 +18,10 @@ class AppState extends ChangeNotifier {
   SharedPreferences? _prefs;
   String? email;
   String childName = 'Teman';
+  Gender gender = Gender.boy;
   Role? role;
-  String themeId = 'hewan';
+  String themeId = 'default';
+  bool onboardingSeen = false;
   TabItem tab = TabItem.main;
   LearnMode learnMode = LearnMode.menu;
   bool ready = false;
@@ -33,16 +37,18 @@ class AppState extends ChangeNotifier {
   final List<SongItem> songs = [...songsData];
   final Set<String> favorites = {};
   int stars = 12;
-  int streak = 3;
 
   AppThemeData get theme =>
-      appThemes.firstWhere((t) => t.id == themeId, orElse: () => appThemes[2]);
+      appThemes.firstWhere((t) => t.id == themeId, orElse: () => appThemes[0]);
 
   Future<void> load() async {
     _prefs = await SharedPreferences.getInstance();
     email = _prefs?.getString('email');
     childName = _prefs?.getString('childName') ?? 'Teman';
-    themeId = _prefs?.getString('themeId') ?? 'hewan';
+    gender = _prefs?.getString('gender') == 'girl' ? Gender.girl : Gender.boy;
+    onboardingSeen = _prefs?.getBool('onboardingSeen') ?? false;
+    final savedTheme = _prefs?.getString('themeId') ?? 'default';
+    themeId = appThemes.any((t) => t.id == savedTheme) ? savedTheme : 'default';
     final roleName = _prefs?.getString('role');
     role = roleName == 'teacher'
         ? Role.teacher
@@ -53,7 +59,6 @@ class AppState extends ChangeNotifier {
       progress[key] = _prefs?.getInt('progress_$key') ?? progress[key]!;
     }
     stars = _prefs?.getInt('stars') ?? stars;
-    streak = _prefs?.getInt('streak') ?? streak;
     ready = true;
     notifyListeners();
   }
@@ -61,22 +66,41 @@ class AppState extends ChangeNotifier {
   Future<void> login({
     required String nextEmail,
     required String password,
-    required bool teacherMode,
+    bool teacherMode = false,
     String? name,
+    Gender? nextGender,
   }) async {
-    if (!nextEmail.contains('@')) {
-      throw 'Email belum valid ya Bunda/Ayah';
-    }
+    if (nextEmail.trim().length < 3) throw 'Username minimal 3 karakter ya';
     if (password.length < 6) throw 'Password minimal 6 karakter ya';
-    role = teacherMode || nextEmail.toLowerCase() == adminEmail
+    role = teacherMode || _resolveRole(nextEmail) == Role.teacher
         ? Role.teacher
         : Role.child;
-    email = nextEmail;
+    email = nextEmail.trim();
     childName = name?.trim().isNotEmpty == true ? name!.trim() : 'Teman';
+    gender = nextGender ?? gender;
     await _prefs?.setString('email', email!);
     await _prefs?.setString('childName', childName);
+    await _prefs?.setString('gender', gender == Gender.girl ? 'girl' : 'boy');
     await _prefs?.setString('role', role == Role.teacher ? 'teacher' : 'child');
     tab = role == Role.teacher ? TabItem.akun : TabItem.main;
+    notifyListeners();
+  }
+
+  Role _resolveRole(String identity) {
+    final id = identity.toLowerCase().trim();
+    if (id == adminEmail ||
+        id == 'pengajar' ||
+        id == 'guru' ||
+        id.startsWith('guru_') ||
+        id.contains('@guru')) {
+      return Role.teacher;
+    }
+    return Role.child;
+  }
+
+  Future<void> completeOnboarding() async {
+    onboardingSeen = true;
+    await _prefs?.setBool('onboardingSeen', true);
     notifyListeners();
   }
 

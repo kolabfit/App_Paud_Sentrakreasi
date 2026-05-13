@@ -1,12 +1,19 @@
 part of '../main.dart';
 
 // ─── Tactile Card Decoration (3D pressed look) ──────────────────
-BoxDecoration cardDecoration(BuildContext context, {Color? borderColor, double radius = 28}) {
+BoxDecoration cardDecoration(
+  BuildContext context, {
+  Color? borderColor,
+  double radius = 28,
+}) {
   final t = _themeOf(context);
   return BoxDecoration(
     color: t.widgetBg,
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: borderColor ?? t.widgetBorder.withValues(alpha: .28), width: 1.6),
+    border: Border.all(
+      color: borderColor ?? t.widgetBorder.withValues(alpha: .28),
+      width: 1.6,
+    ),
     boxShadow: [
       BoxShadow(
         blurRadius: 18,
@@ -17,7 +24,11 @@ BoxDecoration cardDecoration(BuildContext context, {Color? borderColor, double r
   );
 }
 
-BoxDecoration tactileCard(BuildContext context, {Color? border, double radius = 32}) {
+BoxDecoration tactileCard(
+  BuildContext context, {
+  Color? border,
+  double radius = 32,
+}) {
   final t = _themeOf(context);
   final b = border ?? t.widgetBorder;
   return BoxDecoration(
@@ -50,7 +61,11 @@ ButtonStyle bigButton(Color color) => FilledButton.styleFrom(
   foregroundColor: Colors.white,
   minimumSize: const Size.fromHeight(58),
   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-  textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, letterSpacing: 1),
+  textStyle: const TextStyle(
+    fontSize: 15,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 1,
+  ),
 );
 
 ButtonStyle tactileButton(Color color) => FilledButton.styleFrom(
@@ -59,7 +74,11 @@ ButtonStyle tactileButton(Color color) => FilledButton.styleFrom(
   minimumSize: const Size.fromHeight(62),
   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
   elevation: 0,
-  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 1.2),
+  textStyle: const TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 1.2,
+  ),
   padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
 );
 
@@ -97,7 +116,7 @@ AppThemeData _themeOf(BuildContext context) {
     final container = ProviderScope.containerOf(context);
     return container.read(appStateProvider).theme;
   } catch (_) {
-    return appThemes[3]; // fallback to 'hewan'
+    return appThemes[0];
   }
 }
 
