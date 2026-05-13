@@ -6,7 +6,6 @@ class SongPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final thumb = youtubeThumb(song.videoUrl);
     final t = _themeOf(context);
     return Container(
       padding: const EdgeInsets.all(18),
@@ -24,45 +23,7 @@ class SongPlayer extends StatelessWidget {
               borderRadius: BorderRadius.circular(22),
               child: Stack(
                 fit: StackFit.expand,
-                children: [
-                  if (thumb != null)
-                    AppImage(url: thumb, fit: BoxFit.cover)
-                  else
-                    DirectVideo(url: song.videoUrl),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withValues(alpha: .4),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Center(
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: .9),
-                        boxShadow: [
-                          BoxShadow(
-                            blurRadius: 20,
-                            color: Colors.black.withValues(alpha: .2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.play_arrow_rounded,
-                        size: 38,
-                        color: t.primary,
-                      ),
-                    ),
-                  ),
-                ],
+                children: [DirectVideo(url: song.videoUrl)],
               ),
             ),
           ),
@@ -72,25 +33,15 @@ class SongPlayer extends StatelessWidget {
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
           ),
           AudioBars(color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            children: song.lyrics
-                .take(4)
-                .map(
-                  (l) => Chip(
-                    label: Text(
-                      l.text,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    backgroundColor: t.dark
-                        ? Colors.white10
-                        : Colors.grey.shade100,
-                    side: BorderSide.none,
-                  ),
-                )
-                .toList(),
-          ),
+          if (song.fileName != null) ...[
+            const SizedBox(height: 8),
+            Chip(
+              avatar: const Icon(Icons.video_file_rounded, size: 18),
+              label: Text(song.fileName!),
+              backgroundColor: t.dark ? Colors.white10 : Colors.grey.shade100,
+              side: BorderSide.none,
+            ),
+          ],
         ],
       ),
     );
@@ -109,10 +60,8 @@ class _DirectVideoState extends State<DirectVideo> {
   @override
   void initState() {
     super.initState();
-    if (!widget.url.contains('youtube.com')) {
-      controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-        ..initialize().then((_) => mounted ? setState(() {}) : null);
-    }
+    controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+      ..initialize().then((_) => mounted ? setState(() {}) : null);
   }
 
   @override
@@ -130,7 +79,39 @@ class _DirectVideoState extends State<DirectVideo> {
         child: const Center(child: Icon(Icons.video_library, size: 64)),
       );
     }
-    return VideoPlayer(c);
+    return GestureDetector(
+      onTap: () {
+        c.value.isPlaying ? c.pause() : c.play();
+        setState(() {});
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: c.value.size.width,
+              height: c.value.size.height,
+              child: VideoPlayer(c),
+            ),
+          ),
+          AnimatedOpacity(
+            opacity: c.value.isPlaying ? 0 : 1,
+            duration: 180.ms,
+            child: Container(
+              color: Colors.black.withValues(alpha: .18),
+              child: const Center(
+                child: CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.play_arrow_rounded, size: 46),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -201,7 +182,7 @@ class SongTile extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    song.videoUrl,
+                    song.fileName ?? 'Video upload pengajar',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 12, color: muted(context)),

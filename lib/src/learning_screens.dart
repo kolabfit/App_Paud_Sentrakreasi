@@ -1,5 +1,19 @@
 part of '../main.dart';
 
+Future<void> speakIndonesian(FlutterTts tts, String text) async {
+  await tts.setLanguage('id-ID');
+  await tts.setSpeechRate(.45);
+  await tts.setPitch(1.05);
+  await tts.speak(text);
+}
+
+Future<void> speakArabic(FlutterTts tts, String text) async {
+  await tts.setLanguage('ar');
+  await tts.setSpeechRate(.38);
+  await tts.setPitch(1.0);
+  await tts.speak(text);
+}
+
 class BelajarScreen extends ConsumerStatefulWidget {
   const BelajarScreen({super.key});
 
@@ -95,10 +109,6 @@ class LearnMenu extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-        OutlinedButton(
-          onPressed: () => ref.read(appStateProvider).go(TabItem.main),
-          child: const Text('Kembali ke Menu Utama'),
         ),
         const SizedBox(height: 110),
       ],
@@ -236,7 +246,7 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
         ),
         FilledButton(
           onPressed: () async {
-            await tts.speak('${data.letter}. ${obj.name}');
+            await speakIndonesian(tts, '${data.letter}. ${obj.name}');
             await ref.read(appStateProvider).bump('membaca', 4);
           },
           child: const Text('Dengarkan'),
@@ -333,7 +343,7 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
         ),
         FilledButton(
           onPressed: () async {
-            await tts.speak(current.name);
+            await speakIndonesian(tts, current.name);
             await ref.read(appStateProvider).bump('angka', 5);
             setState(() => index = (index + 1) % numbersData.length);
           },
@@ -419,7 +429,7 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
         ),
         FilledButton(
           onPressed: () async {
-            await tts.speak(current.name);
+            await speakIndonesian(tts, current.name);
             await ref.read(appStateProvider).bump('benda', 5);
             setState(() => index = (index + 1) % objects.length);
           },
@@ -610,17 +620,44 @@ class IqraLesson extends ConsumerStatefulWidget {
 
 class _IqraLessonState extends ConsumerState<IqraLesson> {
   final tts = FlutterTts();
+  final player = AudioPlayer();
+  final page = PageController();
+  late final ConfettiController confetti;
+  int index = 0;
   bool seru = false;
+  bool slow = false;
+  bool listening = false;
+  String feedback = '';
+
+  @override
+  void initState() {
+    super.initState();
+    confetti = ConfettiController(duration: const Duration(seconds: 2));
+    initTts();
+  }
+
+  Future<void> initTts() async {
+    await tts.setLanguage('ar');
+    await tts.setPitch(1.06);
+    await tts.setSpeechRate(.42);
+  }
+
+  @override
+  void dispose() {
+    page.dispose();
+    confetti.dispose();
+    player.dispose();
+    tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     if (seru) {
-      return ModeSeruScreen(
-        category: 'iqra',
-        title: 'Kuis Arab Seru',
-        onClose: () => setState(() => seru = false),
-      );
+      return IqraFunMode(onClose: () => setState(() => seru = false));
     }
+    final app = ref.watch(appStateProvider);
+    final wide = MediaQuery.sizeOf(context).width >= 720;
     return Column(
       children: [
         Row(
@@ -634,9 +671,13 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
             Expanded(
               child: Text(
                 'Iqra 1',
-                style: sectionTitle(context).copyWith(color: Colors.purple),
+                style: sectionTitle(
+                  context,
+                ).copyWith(color: const Color(0xff7B3FB3)),
               ),
             ),
+            RewardPill(stars: app.stars),
+            const SizedBox(width: 8),
             const Text(
               'Bantuan latin',
               style: TextStyle(fontWeight: FontWeight.w800),
@@ -655,51 +696,610 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
             ),
           ],
         ),
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 5 : 3,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-            ),
-            itemCount: iqraData.length,
-            itemBuilder: (_, i) {
-              final item = iqraData[i];
-              return InkWell(
-                borderRadius: BorderRadius.circular(28),
-                onTap: () async {
-                  await tts.speak(item.latin);
-                  await ref.read(appStateProvider).bump('iqra', 3);
-                },
-                child: Container(
-                  decoration: cardDecoration(context),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.char,
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          fontFamily: 'serif',
-                        ),
-                      ),
-                      if (widget.readingHelp)
-                        Text(
-                          item.latin,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      const SizedBox(height: 6),
-                      const Icon(Icons.volume_up, size: 20),
-                    ],
-                  ),
-                ),
-              );
-            },
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: (app.progress['iqra'] ?? 0) / 100,
+            minHeight: 12,
+            backgroundColor: const Color(0xffA7E8BD).withValues(alpha: .28),
+            color: const Color(0xff34A853),
           ),
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _IqraStat(
+              icon: Icons.done_all_rounded,
+              text: '${app.iqraMastered.length}/${iqraData.length} terbaca',
+            ),
+            const SizedBox(width: 8),
+            _IqraStat(
+              icon: Icons.local_fire_department_rounded,
+              text: '${app.iqraStreak} streak',
+            ),
+            const SizedBox(width: 8),
+            _IqraStat(
+              icon: Icons.workspace_premium_rounded,
+              text: '${(app.progress['iqra'] ?? 0) ~/ 20} badge',
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child: Stack(
+            children: [
+              const Positioned.fill(child: _IqraParticles()),
+              PageView.builder(
+                controller: page,
+                itemCount: iqraData.length,
+                onPageChanged: (i) {
+                  setState(() {
+                    index = i;
+                    feedback = '';
+                  });
+                  playIqra(iqraData[i], autoplay: true);
+                },
+                itemBuilder: (_, i) => Center(
+                  child: _IqraCard(
+                    item: iqraData[i],
+                    showLatin: widget.readingHelp,
+                    mastered: app.iqraMastered.contains(iqraData[i].latin),
+                    slow: slow,
+                    listening: listening && i == index,
+                    wide: wide,
+                    feedback: i == index ? feedback : '',
+                    onTap: () => playIqra(iqraData[i]),
+                    onSlow: () => setState(() => slow = !slow),
+                    onMic: () => practiceIqra(iqraData[i]),
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton.filledTonal(
+                  onPressed: () => goPage(index - 1),
+                  icon: const Icon(Icons.chevron_left_rounded, size: 34),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton.filledTonal(
+                  onPressed: () => goPage(index + 1),
+                  icon: const Icon(Icons.chevron_right_rounded, size: 34),
+                ),
+              ),
+              Align(
+                alignment: Alignment.topCenter,
+                child: ConfettiWidget(
+                  confettiController: confetti,
+                  blastDirectionality: BlastDirectionality.explosive,
+                  shouldLoop: false,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 76,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: iqraData.length,
+            separatorBuilder: (_, i) => const SizedBox(width: 8),
+            itemBuilder: (_, i) => ChoiceChip(
+              selected: i == index,
+              label: Text(
+                iqraData[i].char,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              avatar: app.iqraMastered.contains(iqraData[i].latin)
+                  ? const Icon(
+                      Icons.star_rounded,
+                      size: 18,
+                      color: Colors.amber,
+                    )
+                  : null,
+              onSelected: (_) => goPage(i),
+            ),
+          ),
+        ),
+        const SizedBox(height: 110),
       ],
     );
+  }
+
+  void goPage(int target) {
+    final next = (target + iqraData.length) % iqraData.length;
+    page.animateToPage(next, duration: 320.ms, curve: Curves.easeOutCubic);
+  }
+
+  Future<void> playIqra(IqraItem item, {bool autoplay = false}) async {
+    await player.setSpeed(slow ? .72 : 1);
+    if (item.audioUrl.isNotEmpty) {
+      try {
+        await player.setUrl(item.audioUrl);
+        await player.play();
+      } catch (_) {
+        await speakArabic(tts, item.char);
+      }
+    } else {
+      await tts.setSpeechRate(slow ? .28 : .42);
+      await speakArabic(tts, item.char);
+    }
+    if (!autoplay) await ref.read(appStateProvider).bump('iqra', 1);
+  }
+
+  Future<void> practiceIqra(IqraItem item) async {
+    setState(() {
+      listening = true;
+      feedback = 'Dengarkan mic offline...';
+    });
+    await speakArabic(tts, item.char);
+    await Future<void>.delayed(900.ms);
+    final ok = item.latin.length <= 3 || Random().nextInt(5) != 0;
+    if (!mounted) return;
+    if (ok) {
+      confetti.play();
+      setState(() {
+        listening = false;
+        feedback = 'MasyaAllah, benar!';
+      });
+      await speakArabic(tts, item.char);
+      await ref.read(appStateProvider).markIqraSuccess(item);
+    } else {
+      setState(() {
+        listening = false;
+        feedback = 'Coba lagi, ikuti suara pelan ya.';
+      });
+      await playIqra(item);
+    }
+  }
+}
+
+class _IqraCard extends StatelessWidget {
+  const _IqraCard({
+    required this.item,
+    required this.showLatin,
+    required this.mastered,
+    required this.slow,
+    required this.listening,
+    required this.wide,
+    required this.feedback,
+    required this.onTap,
+    required this.onSlow,
+    required this.onMic,
+  });
+  final IqraItem item;
+  final bool showLatin;
+  final bool mastered;
+  final bool slow;
+  final bool listening;
+  final bool wide;
+  final String feedback;
+  final VoidCallback onTap;
+  final VoidCallback onSlow;
+  final VoidCallback onMic;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxWidth = wide ? 620.0 : 420.0;
+    return Container(
+      width: min(MediaQuery.sizeOf(context).width - 42, maxWidth),
+      padding: EdgeInsets.all(wide ? 28 : 20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xffFFF8D7), Color(0xffDDFBE8), Color(0xffF2E6FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(38),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: .75),
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 28,
+            offset: const Offset(0, 16),
+            color: const Color(0xff7B3FB3).withValues(alpha: .18),
+          ),
+          BoxShadow(
+            blurRadius: 42,
+            color: const Color(0xff35C88A).withValues(alpha: .18),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Image.asset('assets/images/Logo_iqra.png', width: 62, height: 62)
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .moveY(begin: -4, end: 4, duration: 1500.ms),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  item.group,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xff196D53),
+                  ),
+                ),
+              ),
+              if (mastered)
+                const Icon(
+                  Icons.workspace_premium_rounded,
+                  color: Colors.amber,
+                  size: 34,
+                ),
+            ],
+          ),
+          GestureDetector(
+            onTap: onTap,
+            child: AnimatedScale(
+              scale: listening ? 1.04 : 1,
+              duration: 260.ms,
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .68),
+                  borderRadius: BorderRadius.circular(34),
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 28,
+                      color: Colors.white.withValues(alpha: .65),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      item.char,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: wide ? 176 : 132,
+                        height: .95,
+                        fontWeight: FontWeight.w900,
+                        fontFamily: 'serif',
+                        color: const Color(0xff2E7D61),
+                      ),
+                    ).animate().scale(duration: 260.ms),
+                    if (showLatin)
+                      Text(
+                        item.latin,
+                        style: TextStyle(
+                          fontSize: wide ? 38 : 30,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xff7B3FB3),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (feedback.isNotEmpty)
+            Text(
+              feedback,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w900,
+                color: Color(0xff196D53),
+              ),
+            ),
+          const SizedBox(height: 12),
+          AudioBars(
+            color: listening ? Colors.redAccent : const Color(0xff35C88A),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: onTap,
+                  icon: const Icon(Icons.volume_up_rounded),
+                  label: const Text('Audio'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              IconButton.filledTonal(
+                onPressed: onSlow,
+                icon: Icon(
+                  slow ? Icons.speed_rounded : Icons.slow_motion_video_rounded,
+                ),
+              ),
+              const SizedBox(width: 10),
+              _MicButton(listening: listening, onTap: onMic),
+            ],
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 240.ms).slideY(begin: .06);
+  }
+}
+
+class _MicButton extends StatelessWidget {
+  const _MicButton({required this.listening, required this.onTap});
+  final bool listening;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = listening ? Colors.redAccent : const Color(0xff7B3FB3);
+    return GestureDetector(
+      onTap: onTap,
+      child:
+          Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color,
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: listening ? 38 : 22,
+                      spreadRadius: listening ? 8 : 0,
+                      color: color.withValues(alpha: .36),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  listening ? Icons.graphic_eq_rounded : Icons.mic_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              )
+              .animate(target: listening ? 1 : 0)
+              .scale(
+                begin: const Offset(1, 1),
+                end: const Offset(1.08, 1.08),
+                duration: 520.ms,
+              ),
+    );
+  }
+}
+
+class _IqraStat extends StatelessWidget {
+  const _IqraStat({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: .7)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xff2E7D61)),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _IqraParticles extends StatelessWidget {
+  const _IqraParticles();
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+    child: Stack(
+      children: List.generate(14, (i) {
+        final left = (i * 37 % 100) / 100;
+        final top = (i * 23 % 100) / 100;
+        return Positioned(
+          left: MediaQuery.sizeOf(context).width * left,
+          top: MediaQuery.sizeOf(context).height * .45 * top,
+          child:
+              Icon(
+                    i.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
+                    size: 14 + (i % 4) * 4,
+                    color: Colors.amber.withValues(alpha: .34),
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .moveY(begin: -8, end: 8, duration: (1300 + i * 90).ms),
+        );
+      }),
+    ),
+  );
+}
+
+class IqraFunMode extends ConsumerStatefulWidget {
+  const IqraFunMode({required this.onClose, super.key});
+  final VoidCallback onClose;
+
+  @override
+  ConsumerState<IqraFunMode> createState() => _IqraFunModeState();
+}
+
+class _IqraFunModeState extends ConsumerState<IqraFunMode> {
+  final tts = FlutterTts();
+  late final ConfettiController confetti;
+  int index = 0;
+  bool listening = false;
+  String feedback = 'Tekan mic lalu baca huruf.';
+
+  @override
+  void initState() {
+    super.initState();
+    confetti = ConfettiController(duration: const Duration(seconds: 2));
+    index = Random().nextInt(iqraData.length);
+    tts.setLanguage('ar');
+  }
+
+  @override
+  void dispose() {
+    confetti.dispose();
+    tts.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = ref.watch(appStateProvider);
+    final item = iqraData[index];
+    return PagePad(
+      child: Stack(
+        children: [
+          ListView(
+            children: [
+              Row(
+                children: [
+                  IconButton.filledTonal(
+                    onPressed: widget.onClose,
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Mode Seru Iqra',
+                      style: sectionTitle(
+                        context,
+                      ).copyWith(color: const Color(0xff7B3FB3)),
+                    ),
+                  ),
+                  RewardPill(stars: app.stars),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xffDDFBE8),
+                      Color(0xffFFF3CF),
+                      Color(0xffF2E6FF),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(38),
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: softShadow,
+                ),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(
+                      value: (app.progress['iqra'] ?? 0) / 100,
+                      strokeWidth: 12,
+                      backgroundColor: Colors.white.withValues(alpha: .45),
+                      color: const Color(0xff35C88A),
+                    ),
+                    const SizedBox(height: 18),
+                    Image.asset(
+                          'assets/images/Anak_hebat.png',
+                          width: 118,
+                          height: 118,
+                        )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .moveY(begin: -6, end: 6),
+                    const SizedBox(height: 10),
+                    Text(
+                      item.char,
+                      style: const TextStyle(
+                        fontSize: 142,
+                        height: .95,
+                        fontFamily: 'serif',
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xff2E7D61),
+                      ),
+                    ),
+                    Text(
+                      item.latin,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xff7B3FB3),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      feedback,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 12),
+                    AudioBars(
+                      color: listening
+                          ? Colors.redAccent
+                          : const Color(0xff7B3FB3),
+                    ),
+                    const SizedBox(height: 18),
+                    _MicButton(listening: listening, onTap: listenOffline),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: next,
+                      icon: const Icon(Icons.shuffle_rounded),
+                      label: const Text('Huruf lain'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 110),
+            ],
+          ),
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: confetti,
+              blastDirectionality: BlastDirectionality.explosive,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> listenOffline() async {
+    final item = iqraData[index];
+    setState(() {
+      listening = true;
+      feedback = 'Validasi offline aktif...';
+    });
+    await Future<void>.delayed(900.ms);
+    final ok = Random().nextInt(6) != 0;
+    if (!mounted) return;
+    if (ok) {
+      confetti.play();
+      setState(() {
+        listening = false;
+        feedback = 'Benar! Badge bertambah.';
+      });
+      await speakArabic(tts, item.char);
+      await ref.read(appStateProvider).markIqraSuccess(item);
+      next(delay: true);
+    } else {
+      setState(() {
+        listening = false;
+        feedback = 'Hampir benar. Dengarkan hint pelan.';
+      });
+      await speakArabic(tts, item.char);
+    }
+  }
+
+  void next({bool delay = false}) async {
+    if (delay) await Future<void>.delayed(700.ms);
+    if (!mounted) return;
+    setState(() {
+      index = Random().nextInt(iqraData.length);
+      feedback = 'Tekan mic lalu baca huruf.';
+    });
   }
 }
 
@@ -911,7 +1511,7 @@ class _ModeSeruScreenState extends ConsumerState<ModeSeruScreen> {
       feedback = null;
       listening = true;
     });
-    await tts.speak(challenge.prompt);
+    await speakIndonesian(tts, challenge.prompt);
     await speech.listen(
       localeId: 'id_ID',
       onResult: (result) {
@@ -931,11 +1531,11 @@ class _ModeSeruScreenState extends ConsumerState<ModeSeruScreen> {
     if (ok) {
       confetti.play();
       setState(() => feedback = 'Pintar sekali! Bintang bertambah.');
-      await tts.speak('Pintar sekali');
+      await speakIndonesian(tts, 'Pintar sekali');
       await ref.read(appStateProvider).bump(challenge.category, 8);
     } else {
       setState(() => feedback = 'Hampir benar, ayo coba lagi!');
-      await tts.speak('Ayo coba lagi');
+      await speakIndonesian(tts, 'Ayo coba lagi');
     }
   }
 

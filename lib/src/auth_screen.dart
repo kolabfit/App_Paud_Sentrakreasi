@@ -371,6 +371,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           .login(
             nextEmail: username.text,
             password: pass.text,
+            register: mode == _AuthMode.register,
             name: mode == _AuthMode.register ? username.text : null,
             nextGender: gender,
           );
@@ -384,9 +385,25 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   Future<void> _social(String provider) async {
     Feedback.forTap(context);
     final name = provider == 'phone' ? 'nomor_hp_user' : '${provider}_user';
-    username.text = name;
-    pass.text = 'social123';
-    await _submit();
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    try {
+      await ref
+          .read(appStateProvider)
+          .login(
+            nextEmail: name,
+            password: 'social123',
+            autoCreate: true,
+            name: name,
+            nextGender: gender,
+          );
+    } catch (e) {
+      setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
 }
 

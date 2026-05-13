@@ -1,4 +1,4 @@
-﻿part of '../main.dart';
+part of '../main.dart';
 
 final lettersData = [
   LetterGroup('A', [
@@ -275,68 +275,35 @@ const objectsData = [
 ];
 
 const iqraData = [
-  IqraItem('Ø§', 'Alif'),
-  IqraItem('Ø¨', 'Ba'),
-  IqraItem('Øª', 'Ta'),
-  IqraItem('Ø«', 'Tsa'),
-  IqraItem('Ø¬', 'Jim'),
-  IqraItem('Ø­', 'Ha'),
-  IqraItem('Ø®', 'Kho'),
-  IqraItem('Ø¯', 'Dal'),
-  IqraItem('Ø°', 'Dzal'),
-  IqraItem('Ø±', 'Ra'),
-  IqraItem('Ø²', 'Zai'),
-  IqraItem('Ø³', 'Sin'),
-  IqraItem('Ø´', 'Syin'),
-  IqraItem('Øµ', 'Shod'),
-  IqraItem('Ø¶', 'Dhod'),
-  IqraItem('Ø·', 'Tho'),
-  IqraItem('Ø¸', 'Zho'),
-  IqraItem('Ø¹', 'Ain'),
-  IqraItem('Øº', 'Ghoin'),
-  IqraItem('Ù', 'Fa'),
-  IqraItem('Ù‚', 'Qof'),
-  IqraItem('Ùƒ', 'Kaf'),
-  IqraItem('Ù„', 'Lam'),
-  IqraItem('Ù…', 'Mim'),
-  IqraItem('Ù†', 'Nun'),
-  IqraItem('Ùˆ', 'Wau'),
-  IqraItem('Ù‡', 'Ha'),
-  IqraItem('Ø¡', 'Hamzah'),
-  IqraItem('ÙŠ', 'Ya'),
+  IqraItem('ا', 'Alif'),
+  IqraItem('ب', 'Ba'),
+  IqraItem('ت', 'Ta'),
+  IqraItem('ث', 'Tsa'),
+  IqraItem('ج', 'Jim'),
+  IqraItem('ح', 'Ha'),
+  IqraItem('خ', 'Kho'),
+  IqraItem('د', 'Dal'),
+  IqraItem('ذ', 'Dzal'),
+  IqraItem('ر', 'Ra'),
+  IqraItem('ز', 'Zai'),
+  IqraItem('س', 'Sin'),
+  IqraItem('ش', 'Syin'),
+  IqraItem('ص', 'Shod'),
+  IqraItem('ض', 'Dhod'),
+  IqraItem('ط', 'Tho'),
+  IqraItem('ظ', 'Zho'),
+  IqraItem('ع', 'Ain'),
+  IqraItem('غ', 'Ghoin'),
+  IqraItem('ف', 'Fa'),
+  IqraItem('ق', 'Qof'),
+  IqraItem('ك', 'Kaf'),
+  IqraItem('ل', 'Lam'),
+  IqraItem('م', 'Mim'),
+  IqraItem('ن', 'Nun'),
+  IqraItem('و', 'Wau'),
+  IqraItem('ه', 'Ha'),
+  IqraItem('ء', 'Hamzah'),
+  IqraItem('ي', 'Ya'),
 ];
 
-const songsData = [
-  SongItem(
-    'pelangi',
-    'Pelangi-Pelangi',
-    'https://www.youtube.com/embed/Ld_6ur6KDUc',
-    [
-      LyricLine(21, 'Pelangi pelangi'),
-      LyricLine(24, 'Alangkah indahmu'),
-      LyricLine(27, 'Merah kuning hijau'),
-      LyricLine(30, 'Di langit yang biru'),
-    ],
-  ),
-  SongItem(
-    'balonku',
-    'Balonku Ada Lima',
-    'https://www.youtube.com/embed/ykCeUb1kOIA',
-    [
-      LyricLine(20, 'Balonku ada lima'),
-      LyricLine(23, 'Rupa-rupa warnanya'),
-      LyricLine(26, 'Hijau kuning kelabu'),
-      LyricLine(29, 'Merah muda dan biru'),
-    ],
-  ),
-  SongItem(
-    'burung_kakaktua',
-    'Burung Kakaktua',
-    'https://www.youtube.com/embed/KGiUc9seQjw',
-    [
-      LyricLine(14, 'Burung kakaktua'),
-      LyricLine(17, 'Hinggap di jendela'),
-      LyricLine(20, 'Nenek sudah tua'),
-    ],
-  ),
-];
+const songsData = <SongItem>[];

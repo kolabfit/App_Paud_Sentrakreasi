@@ -389,28 +389,6 @@ class ThemeWheel extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        _ThemeCardStrip(app: app),
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          onPressed: () => Feedback.forTap(context),
-          icon: const Icon(Icons.auto_awesome_rounded),
-          label: const Text('Terapkan Tema'),
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(58),
-            backgroundColor: selected.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-            shadowColor: selected.primary.withValues(alpha: .5),
-            elevation: 10,
-          ),
-        ),
       ],
     );
   }
@@ -497,6 +475,7 @@ class _WheelThemeBadge extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _ThemeCardStrip extends ConsumerWidget {
   const _ThemeCardStrip({required this.app});
   final AppState app;

@@ -13,7 +13,8 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
   final url = TextEditingController();
   final category = TextEditingController(text: 'hewan');
   final songTitle = TextEditingController();
-  final songUrl = TextEditingController();
+  String? pickedSongName;
+  String? pickedSongDataUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +30,10 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
               color: t.widgetBg,
-              border: Border.all(color: Colors.deepPurple.withValues(alpha: .3), width: 2),
+              border: Border.all(
+                color: Colors.deepPurple.withValues(alpha: .3),
+                width: 2,
+              ),
               boxShadow: [
                 BoxShadow(
                   offset: const Offset(0, 8),
@@ -49,7 +53,9 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
-                          color: t.dark ? Colors.white : const Color(0xff263238),
+                          color: t.dark
+                              ? Colors.white
+                              : const Color(0xff263238),
                           letterSpacing: -.5,
                         ),
                       ),
@@ -71,10 +77,15 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                   decoration: BoxDecoration(
                     color: Colors.deepPurple.withValues(alpha: .1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.deepPurple.withValues(alpha: .2)),
+                    border: Border.all(
+                      color: Colors.deepPurple.withValues(alpha: .2),
+                    ),
                   ),
                   padding: const EdgeInsets.all(10),
-                  child: Image.asset('assets/images/Logo_Membaca.png', fit: BoxFit.contain),
+                  child: Image.asset(
+                    'assets/images/Logo_Membaca.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ],
             ),
@@ -86,12 +97,42 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _adminChip('huruf', 'Kelola Huruf', Icons.abc_rounded, Colors.redAccent),
-                _adminChip('benda', 'Kelola Benda', Icons.category_rounded, Colors.green),
-                _adminChip('lagu', 'Lagu Anak', Icons.music_note_rounded, Colors.pink),
-                _adminChip('iqra', 'Iqra', Icons.auto_stories_rounded, Colors.purple),
-                _adminChip('quiz', 'Quiz Seru', Icons.mic_rounded, Colors.orange),
-                _adminChip('progress', 'Progress', Icons.trending_up_rounded, Colors.teal),
+                _adminChip(
+                  'huruf',
+                  'Kelola Huruf',
+                  Icons.abc_rounded,
+                  Colors.redAccent,
+                ),
+                _adminChip(
+                  'benda',
+                  'Kelola Benda',
+                  Icons.category_rounded,
+                  Colors.green,
+                ),
+                _adminChip(
+                  'lagu',
+                  'Lagu Anak',
+                  Icons.music_note_rounded,
+                  Colors.pink,
+                ),
+                _adminChip(
+                  'iqra',
+                  'Iqra',
+                  Icons.auto_stories_rounded,
+                  Colors.purple,
+                ),
+                _adminChip(
+                  'quiz',
+                  'Quiz Seru',
+                  Icons.mic_rounded,
+                  Colors.orange,
+                ),
+                _adminChip(
+                  'progress',
+                  'Progress',
+                  Icons.trending_up_rounded,
+                  Colors.teal,
+                ),
               ],
             ),
           ),
@@ -99,7 +140,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
 
           if (tab == 'benda' || tab == 'huruf') contentManager(app),
           if (tab == 'lagu') songManager(app),
-          if (tab == 'iqra') iqraManager(),
+          if (tab == 'iqra') iqraManager(app),
           if (tab == 'quiz') quizManager(),
           if (tab == 'progress')
             ProgressOverview(progress: app.progress, compact: false),
@@ -113,7 +154,9 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
               minimumSize: const Size.fromHeight(54),
               foregroundColor: Colors.redAccent,
               side: const BorderSide(color: Colors.redAccent),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
             ),
           ),
           const SizedBox(height: 110),
@@ -217,22 +260,63 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
               label: 'Judul Lagu',
               icon: Icons.music_note,
             ),
-            AppField(
-              controller: songUrl,
-              label: 'URL Video / YouTube',
-              icon: Icons.link,
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardColor(context),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: Colors.pink.withValues(alpha: .22),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.pink.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.video_file_rounded,
+                      color: Colors.pink,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      pickedSongName ?? 'Belum ada video dipilih',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: pickSongVideo,
+                    icon: const Icon(Icons.upload_file_rounded),
+                    label: const Text('Pilih'),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: () {
-                if (songTitle.text.isEmpty || songUrl.text.isEmpty) return;
+                final video = pickedSongDataUrl;
+                if (songTitle.text.isEmpty || video == null) return;
                 ref
                     .read(appStateProvider)
-                    .addSong(songTitle.text, songUrl.text);
+                    .addSong(songTitle.text, video, fileName: pickedSongName);
                 songTitle.clear();
-                songUrl.clear();
+                setState(() {
+                  pickedSongName = null;
+                  pickedSongDataUrl = null;
+                });
               },
-              icon: const Icon(Icons.video_call),
-              label: const Text('Tambah Lagu'),
+              icon: const Icon(Icons.save_rounded),
+              label: const Text('Simpan Video Lagu'),
             ),
           ],
         ),
@@ -240,7 +324,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
         ...app.songs.map(
           (s) => AdminRow(
             title: s.title,
-            subtitle: s.videoUrl,
+            subtitle: s.fileName ?? 'Video upload pengajar',
             icon: Icons.play_circle,
             onDelete: () => ref.read(appStateProvider).removeSong(s),
           ),
@@ -249,31 +333,139 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
     );
   }
 
-  Widget iqraManager() {
-    return AdminForm(
-      title: 'Kelola Iqra 1',
+  Widget iqraManager(AppState app) {
+    return Column(
       children: [
-        const Text(
-          'Materi hijaiyah dasar aktif. Audio tajwid dapat ditautkan per huruf.',
+        AdminForm(
+          title: 'Kelola Iqra 1',
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _IqraAdminStat(
+                    'Progress',
+                    '${app.progress['iqra'] ?? 0}%',
+                    Icons.donut_large_rounded,
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _IqraAdminStat(
+                    'Berhasil',
+                    '${app.iqraMastered.length}',
+                    Icons.done_all_rounded,
+                    Colors.purple,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _IqraAdminStat(
+                    'Streak',
+                    '${app.iqraStreak}',
+                    Icons.local_fire_department_rounded,
+                    Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            AppField(
+              controller: name,
+              label: 'Judul materi / huruf',
+              icon: Icons.auto_stories_rounded,
+            ),
+            AppField(
+              controller: url,
+              label: 'URL audio atau gambar Iqra',
+              icon: Icons.perm_media_rounded,
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                name.clear();
+                url.clear();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Media Iqra siap dipreview dan disinkronkan.',
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.cloud_upload_rounded),
+              label: const Text('Upload Media'),
+            ),
+            const SizedBox(height: 14),
+            if (url.text.isNotEmpty)
+              AdminRow(
+                title: name.text.isEmpty ? 'Preview media Iqra' : name.text,
+                subtitle: url.text,
+                icon: Icons.play_circle_fill_rounded,
+                onDelete: () => setState(url.clear),
+              ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: iqraData
+                  .map(
+                    (e) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: app.iqraMastered.contains(e.latin)
+                            ? Colors.green.withValues(alpha: .12)
+                            : Colors.purple.withValues(alpha: .08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.purple.withValues(alpha: .15),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '${e.char} ${e.latin}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                          if (app.iqraMastered.contains(e.latin))
+                            const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Icon(
+                                Icons.star_rounded,
+                                size: 16,
+                                color: Colors.amber,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: iqraData
-              .map((e) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withValues(alpha: .08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.purple.withValues(alpha: .15)),
+        const SizedBox(height: 12),
+        AdminForm(
+          title: 'History Latihan',
+          children: app.iqraHistory.isEmpty
+              ? const [Text('Belum ada latihan Iqra hari ini.')]
+              : app.iqraHistory.take(6).map((h) {
+                  final p = h.split('|');
+                  return ListTile(
+                    dense: true,
+                    leading: const Icon(Icons.history_rounded),
+                    title: Text(
+                      p.length > 2 ? '${p[1]} ${p[2]}' : h,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
-                    child: Text(
-                      '${e.char} ${e.latin}',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
-                    ),
-                  ))
-              .toList(),
+                    subtitle: Text(p.first),
+                  );
+                }).toList(),
         ),
       ],
     );
@@ -291,4 +483,62 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
       ],
     );
   }
+
+  Future<void> pickSongVideo() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.video,
+      withData: true,
+    );
+    final file = result?.files.single;
+    final bytes = file?.bytes;
+    if (file == null || bytes == null) return;
+    final ext = (file.extension ?? 'mp4').toLowerCase();
+    final mime = switch (ext) {
+      'webm' => 'video/webm',
+      'mov' => 'video/quicktime',
+      'm4v' => 'video/x-m4v',
+      _ => 'video/mp4',
+    };
+    setState(() {
+      pickedSongName = file.name;
+      pickedSongDataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
+    });
+  }
+}
+
+class _IqraAdminStat extends StatelessWidget {
+  const _IqraAdminStat(this.label, this.value, this.icon, this.color);
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .1),
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: color.withValues(alpha: .18)),
+    ),
+    child: Column(
+      children: [
+        Icon(icon, color: color),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        Text(
+          label,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+            color: muted(context),
+          ),
+        ),
+      ],
+    ),
+  );
 }
