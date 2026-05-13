@@ -695,10 +695,21 @@ class ThemedBackground extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(appStateProvider).theme;
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
+        color: t.bg,
+        image: t.backgroundAsset == null
+            ? null
+            : DecorationImage(
+                image: AssetImage(t.backgroundAsset!),
+                fit: BoxFit.cover,
+                opacity: .42,
+              ),
         gradient: LinearGradient(
-          colors: [t.gradientStart, t.gradientEnd],
+          colors: [
+            t.gradientStart.withValues(alpha: .88),
+            t.gradientEnd.withValues(alpha: .88),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

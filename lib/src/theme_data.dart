@@ -13,6 +13,7 @@ class AppThemeData {
     required this.widgetBorder,
     required this.gradientStart,
     required this.gradientEnd,
+    this.backgroundAsset,
     this.dark = false,
   });
 
@@ -28,6 +29,7 @@ class AppThemeData {
   final Color widgetBorder;
   final Color gradientStart;
   final Color gradientEnd;
+  final String? backgroundAsset;
 }
 
 const appThemes = [
@@ -43,6 +45,7 @@ const appThemes = [
     widgetBorder: Color(0xff1498bd),
     gradientStart: Color(0xfff7fbff),
     gradientEnd: Color(0xfffff2dd),
+    backgroundAsset: 'assets/images/Background_image.png',
   ),
   AppThemeData(
     id: 'alam',
