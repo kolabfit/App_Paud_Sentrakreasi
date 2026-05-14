@@ -6,95 +6,141 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStateProvider);
-    final t = app.theme;
-    return PagePad(
-      child: ListView(
-        children: [
-          // Profile card
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: tactileCard(context, radius: 34),
-            child: Row(
-              children: [
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [t.primary, t.accent],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
+    final totalProgress = _accountTotalProgress(app.progress);
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: tablet ? 980 : 520),
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            tablet ? 28 : 18,
+            14,
+            tablet ? 28 : 18,
+            126,
+          ),
+          children: [
+            const _AccountHero(),
+            const SizedBox(height: 16),
+            _PremiumProfileCard(app: app),
+            const SizedBox(height: 16),
+            _LearningStats(app: app),
+            const SizedBox(height: 16),
+            _PremiumBanner(onTap: () => Feedback.forTap(context)),
+            const SizedBox(height: 16),
+            if (app.role == Role.teacher) ...[
+              _TeacherDashboardCard(
+                onTap: () => ref.read(appStateProvider).go(TabItem.akun),
+              ),
+              const SizedBox(height: 16),
+            ],
+            _SettingsSection(app: app),
+            const SizedBox(height: 16),
+            if (tablet)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 5,
+                    child: _OverallProgressCard(
+                      progress: totalProgress,
+                      app: app,
                     ),
-                    borderRadius: BorderRadius.circular(26),
-                    boxShadow: [
-                      BoxShadow(
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                        color: t.primary.withValues(alpha: .25),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(flex: 5, child: _BadgeShowcase()),
+                ],
+              )
+            else ...[
+              _OverallProgressCard(progress: totalProgress, app: app),
+              const SizedBox(height: 16),
+              const _BadgeShowcase(),
+            ],
+            const SizedBox(height: 16),
+            _ThemePickerPanel(app: app),
+            const SizedBox(height: 16),
+            _LogoutCard(onTap: () => ref.read(appStateProvider).logout()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+int _accountTotalProgress(Map<String, int> progress) {
+  final values = [
+    'membaca',
+    'angka',
+    'benda',
+    'iqra',
+  ].map((e) => progress[e] ?? 0).toList();
+  if (values.isEmpty) return 0;
+  return (values.reduce((a, b) => a + b) / values.length).round();
+}
+
+int _accountLevel(int stars) => (stars ~/ 100 + 1).clamp(1, 5);
+
+String _levelTitle(int level) => switch (level) {
+  1 => 'Penjelajah Pemula',
+  2 => 'Penjelajah Ceria',
+  3 => 'Penjelajah Pintar',
+  4 => 'Penjelajah Hebat',
+  _ => 'Penjelajah Juara',
+};
+
+class _AccountHero extends StatelessWidget {
+  const _AccountHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 138,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(32),
+              child: Stack(fit: StackFit.expand),
+            ),
+          ),
+          const Positioned(
+            left: 20,
+            top: 22,
+            right: 112,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Akun',
+                  style: TextStyle(
+                    fontSize: 34,
+                    height: 1,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xff38258A),
+                    shadows: [
+                      Shadow(
+                        blurRadius: 10,
+                        color: Colors.white,
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Text(
-                      app.childName.isNotEmpty
-                          ? app.childName[0].toUpperCase()
-                          : '?',
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        app.childName,
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: t.dark
-                              ? Colors.white
-                              : const Color(0xff263238),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        app.email == null ? '' : '@${app.email}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: muted(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: app.role == Role.teacher
-                              ? Colors.deepPurple.withValues(alpha: .12)
-                              : Colors.green.withValues(alpha: .12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          app.role == Role.teacher
-                              ? '👩‍🏫 Pengajar'
-                              : '👶 Anak',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 11,
-                            color: app.role == Role.teacher
-                                ? Colors.deepPurple
-                                : Colors.green.shade700,
-                          ),
-                        ),
+                SizedBox(height: 8),
+                Text(
+                  'Kelola profil dan pengaturan akunmu ✨',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Color(0xff58607E),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 8,
+                        color: Colors.white,
+                        offset: Offset(0, 2),
                       ),
                     ],
                   ),
@@ -102,91 +148,1102 @@ class AccountScreen extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Rewards
-          RewardPill(stars: app.stars),
-          const SizedBox(height: 16),
-
-          // Progress
-          ProgressOverview(progress: app.progress, compact: false),
-          const SizedBox(height: 20),
-
-          // Theme selector
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: tactileCard(context, radius: 26),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          const Positioned(
+            right: 18,
+            top: 18,
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
+                _AccountRoundButton(icon: Icons.settings_rounded),
+                SizedBox(width: 10),
+                _AccountNotifyButton(),
+              ],
+            ),
+          ),
+          ...List.generate(10, (i) {
+            final left = 34.0 + (i * 41 % 300);
+            final top = 24.0 + (i * 23 % 84);
+            return Positioned(
+              left: left,
+              top: top,
+              child:
+                  Icon(
+                        i.isEven
+                            ? Icons.star_rounded
+                            : Icons.auto_awesome_rounded,
+                        size: i.isEven ? 13 : 10,
+                        color: const Color(0xffFFD34D).withValues(alpha: .75),
+                      )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .scale(
+                        begin: const Offset(.75, .75),
+                        end: const Offset(1.1, 1.1),
+                        duration: (900 + i * 80).ms,
+                      ),
+            );
+          }),
+        ],
+      ),
+    ).animate().fadeIn(duration: 320.ms).slideY(begin: .04);
+  }
+}
+
+class _PremiumProfileCard extends StatelessWidget {
+  const _PremiumProfileCard({required this.app});
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
+    final name = app.childName.trim().isEmpty || app.childName == 'Teman'
+        ? 'Google User'
+        : app.childName.trim();
+    final level = _accountLevel(app.stars);
+    final need = level >= 5 ? 500 : level * 100;
+    final current = app.stars.clamp(0, need);
+    final avatar = app.gender == Gender.girl
+        ? 'assets/images/profil_perempuan.png'
+        : 'assets/images/profil_lakilaki.png';
+    return Container(
+      padding: EdgeInsets.all(tablet ? 24 : 18),
+      decoration: _accountCardDecoration(
+        shadow: const Color(0xff855CFF),
+        radius: 34,
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            right: -8,
+            top: -14,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: const Color(0xffFFD24D).withValues(alpha: .70),
+              size: 24,
+            ),
+          ),
+          Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: tablet ? 118 : 94,
+                    height: tablet ? 118 : 94,
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xff6AD7FF), Color(0xff9D6BFF)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 22,
+                          offset: const Offset(0, 10),
+                          color: const Color(0xff6D8CFF).withValues(alpha: .25),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(avatar, fit: BoxFit.cover),
+                    ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 4,
+                    child: Container(
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
-                        color: Colors.purple.withValues(alpha: .12),
-                        borderRadius: BorderRadius.circular(12),
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xff8D55F6), Color(0xffFF7CBD)],
+                        ),
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 12,
+                            color: const Color(
+                              0xff8D55F6,
+                            ).withValues(alpha: .30),
+                          ),
+                        ],
                       ),
                       child: const Icon(
-                        Icons.palette_rounded,
-                        size: 20,
-                        color: Colors.purple,
+                        Icons.edit_rounded,
+                        color: Colors.white,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'TEMA APLIKASI',
+                  ),
+                ],
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: tablet ? 28 : 23,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 3,
-                        color: Colors.purple,
+                        color: const Color(0xff2F2D72),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _AccountPill(
+                          icon: Icons.star_rounded,
+                          label: 'Level $level',
+                          color: const Color(0xff8B55F6),
+                        ),
+                        _AccountPill(
+                          icon: Icons.workspace_premium_rounded,
+                          label: _levelTitle(level),
+                          color: const Color(0xffFFB020),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(99),
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(
+                          begin: 0,
+                          end: need == 0 ? 0 : current / need,
+                        ),
+                        duration: 700.ms,
+                        curve: Curves.easeOutCubic,
+                        builder: (context, value, _) => LinearProgressIndicator(
+                          value: value,
+                          minHeight: 10,
+                          backgroundColor: const Color(0xffEBE7FF),
+                          color: const Color(0xff8B55F6),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '$current / $need XP',
+                      style: const TextStyle(
+                        color: Color(0xff65698B),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                ThemeWheel(app: app),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          if (app.role == Role.teacher)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: FilledButton.icon(
-                onPressed: () => ref.read(appStateProvider).go(TabItem.akun),
-                icon: const Icon(Icons.dashboard_rounded),
-                label: const Text('Dashboard Pengajar'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(54),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
               ),
-            ),
-          OutlinedButton.icon(
-            onPressed: () => ref.read(appStateProvider).logout(),
-            icon: const Icon(Icons.logout_rounded),
-            label: const Text('Keluar'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(54),
-              foregroundColor: Colors.redAccent,
-              side: const BorderSide(color: Colors.redAccent),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
+              if (tablet) ...[
+                const SizedBox(width: 14),
+                _RewardTrophy(stars: app.stars),
+              ] else
+                _RewardTrophy(stars: app.stars, compact: true),
+            ],
           ),
-          const SizedBox(height: 110),
         ],
       ),
     );
   }
+}
+
+class _LearningStats extends StatelessWidget {
+  const _LearningStats({required this.app});
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
+    final stats = [
+      _StatData(
+        Icons.menu_book_rounded,
+        'Materi Dipelajari',
+        32,
+        'Topik',
+        const Color(0xff33C66A),
+      ),
+      _StatData(
+        Icons.event_available_rounded,
+        'Streak Belajar',
+        12,
+        'Hari',
+        const Color(0xff16B9E8),
+      ),
+      _StatData(
+        Icons.workspace_premium_rounded,
+        'Badge',
+        8,
+        'Diperoleh',
+        const Color(0xffFFB020),
+      ),
+      _StatData(
+        Icons.schedule_rounded,
+        'Waktu Belajar',
+        6,
+        'Jam 45m',
+        const Color(0xff8B55F6),
+      ),
+    ];
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: tablet ? 4 : 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childAspectRatio: tablet ? 2.45 : 2.05,
+      ),
+      itemCount: stats.length,
+      itemBuilder: (_, i) => _StatCard(data: stats[i], delay: i * 70),
+    );
+  }
+}
+
+class _SettingsSection extends StatelessWidget {
+  const _SettingsSection({required this.app});
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
+    final settings = [
+      _SettingData(
+        Icons.person_rounded,
+        'Profil Saya',
+        'Lihat dan edit profil',
+        const Color(0xff30C46A),
+      ),
+      _SettingData(
+        Icons.security_rounded,
+        'Keamanan',
+        'Ubah password & keamanan',
+        const Color(0xff20C997),
+      ),
+      _SettingData(
+        Icons.child_care_rounded,
+        'Pengaturan Anak',
+        'Atur preferensi belajar',
+        const Color(0xff36A3FF),
+      ),
+      _SettingData(
+        Icons.family_restroom_rounded,
+        'Orang Tua',
+        'Kontrol dan pantau anak',
+        const Color(0xffFF6DA8),
+      ),
+      _SettingData(
+        Icons.language_rounded,
+        'Bahasa',
+        'Bahasa Indonesia',
+        const Color(0xff8B55F6),
+      ),
+      _SettingData(
+        Icons.notifications_rounded,
+        'Notifikasi',
+        'Atur notifikasi aplikasi',
+        const Color(0xffFF8A00),
+      ),
+      _SettingData(
+        Icons.color_lens_rounded,
+        'Tema',
+        'Tema ${app.theme.name}',
+        const Color(0xffFF6BCB),
+      ),
+      _SettingData(
+        Icons.help_rounded,
+        'Bantuan & FAQ',
+        'Pusat bantuan aplikasi',
+        const Color(0xff2BA8FF),
+      ),
+    ];
+    return _AccountSectionCard(
+      title: 'Pengaturan Akun',
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: tablet ? 2 : 1,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 12,
+          childAspectRatio: tablet ? 5.2 : 4.8,
+        ),
+        itemCount: settings.length,
+        itemBuilder: (_, i) => _SettingsTile(data: settings[i]),
+      ),
+    );
+  }
+}
+
+class _ThemePickerPanel extends StatelessWidget {
+  const _ThemePickerPanel({required this.app});
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccountSectionCard(
+      title: 'Tema Aplikasi',
+      trailing: _AccountPill(
+        icon: Icons.palette_rounded,
+        label: app.theme.name,
+        color: app.theme.primary,
+      ),
+      child: ThemeWheel(app: app),
+    );
+  }
+}
+
+class _PremiumBanner extends StatelessWidget {
+  const _PremiumBanner({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          gradient: const LinearGradient(
+            colors: [Color(0xff7B55FF), Color(0xffF779BD)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 22,
+              offset: const Offset(0, 12),
+              color: const Color(0xffA45CFF).withValues(alpha: .25),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: .20),
+              ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: Color(0xffFFD84D),
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Belajar Yuk! Premium 👑',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Akses semua fitur premium dan materi eksklusif!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Lihat Benefit',
+                    style: TextStyle(
+                      color: Color(0xffE34DA0),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: Color(0xffE34DA0),
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 320.ms).slideY(begin: .06),
+    );
+  }
+}
+
+class _OverallProgressCard extends StatelessWidget {
+  const _OverallProgressCard({required this.progress, required this.app});
+  final int progress;
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    final mascot = app.gender == Gender.girl
+        ? 'assets/images/Anak_Perempuan_Menu.png'
+        : 'assets/images/Anak_LakiLaki_Menu.png';
+    return Container(
+      constraints: const BoxConstraints(minHeight: 176),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: const LinearGradient(
+          colors: [Color(0xffDCF4FF), Color(0xffF1E8FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 22,
+            offset: const Offset(0, 12),
+            color: const Color(0xff6AAFE6).withValues(alpha: .20),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 92,
+            height: 92,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 88,
+                  height: 88,
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: progress / 100),
+                    duration: 800.ms,
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, child) =>
+                        CircularProgressIndicator(
+                          value: value,
+                          strokeWidth: 9,
+                          strokeCap: StrokeCap.round,
+                          color: const Color(0xff1E95F2),
+                          backgroundColor: Colors.white.withValues(alpha: .75),
+                        ),
+                  ),
+                ),
+                Text(
+                  '$progress%',
+                  style: const TextStyle(
+                    color: Color(0xff1E95F2),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Progress Keseluruhan',
+                  style: TextStyle(
+                    color: Color(0xff27306E),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Hebat! Kamu sudah menyelesaikan banyak materi.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Color(0xff59607E),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    height: 1.25,
+                  ),
+                ),
+                SizedBox(height: 12),
+                _DetailButton(),
+              ],
+            ),
+          ),
+          Image.asset(mascot, width: 92, fit: BoxFit.contain),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeShowcase extends StatelessWidget {
+  const _BadgeShowcase();
+
+  @override
+  Widget build(BuildContext context) {
+    final badges = [
+      (Icons.shield_rounded, const Color(0xffB7D4F7)),
+      (Icons.star_rounded, const Color(0xff965BFF)),
+      (Icons.menu_book_rounded, const Color(0xff33C66A)),
+      (Icons.workspace_premium_rounded, const Color(0xffFFB020)),
+    ];
+    return _AccountSectionCard(
+      title: 'Koleksi Badge',
+      trailing: const Text(
+        'Lihat Semua',
+        style: TextStyle(
+          color: Color(0xff8B55F6),
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      child: SizedBox(
+        height: 94,
+        child: Row(
+          children: badges
+              .map(
+                (b) => Expanded(
+                  child:
+                      Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [b.$2.withValues(alpha: .72), b.$2],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 8),
+                                  color: b.$2.withValues(alpha: .28),
+                                ),
+                              ],
+                            ),
+                            child: Icon(b.$1, color: Colors.white, size: 34),
+                          )
+                          .animate(onPlay: (c) => c.repeat(reverse: true))
+                          .moveY(begin: -3, end: 3, duration: 1300.ms),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutCard extends StatelessWidget {
+  const _LogoutCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccountTapCard(
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xffFF4D6D).withValues(alpha: .12),
+            ),
+            child: const Icon(Icons.logout_rounded, color: Color(0xffFF4D6D)),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Keluar',
+                  style: TextStyle(
+                    color: Color(0xff343864),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Keluar dari akun ini',
+                  style: TextStyle(
+                    color: Color(0xff7A7E9B),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: Color(0xffA8ADC8)),
+        ],
+      ),
+    );
+  }
+}
+
+class _TeacherDashboardCard extends StatelessWidget {
+  const _TeacherDashboardCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccountTapCard(
+      onTap: onTap,
+      child: const Row(
+        children: [
+          _SettingIcon(icon: Icons.dashboard_rounded, color: Colors.deepPurple),
+          SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'Dashboard Pengajar',
+              style: TextStyle(
+                color: Color(0xff343864),
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: Color(0xffA8ADC8)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountSectionCard extends StatelessWidget {
+  const _AccountSectionCard({
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
+  final String title;
+  final Widget child;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: _accountCardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xff303163),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({required this.data});
+  final _SettingData data;
+
+  @override
+  Widget build(BuildContext context) {
+    return _AccountTapCard(
+      onTap: () => Feedback.forTap(context),
+      compact: true,
+      child: Row(
+        children: [
+          _SettingIcon(icon: data.icon, color: data.color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff343864),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  data.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff8185A1),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: Color(0xffA8ADC8),
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({required this.data, required this.delay});
+  final _StatData data;
+  final int delay;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: _accountCardDecoration(radius: 24, shadow: data.color),
+      child: Row(
+        children: [
+          _SettingIcon(icon: data.icon, color: data.color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  data.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff44496D),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: data.value),
+                  duration: 620.ms,
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) => Text(
+                    '$value',
+                    style: TextStyle(
+                      color: data.color,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Text(
+                  data.unit,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff7E829E),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: delay)).slideY(begin: .06);
+  }
+}
+
+class _AccountTapCard extends StatelessWidget {
+  const _AccountTapCard({
+    required this.child,
+    required this.onTap,
+    this.compact = false,
+  });
+  final Widget child;
+  final VoidCallback onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Ink(
+          padding: EdgeInsets.all(compact ? 10 : 14),
+          decoration: _accountCardDecoration(radius: 22),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingIcon extends StatelessWidget {
+  const _SettingIcon({required this.icon, required this.color});
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: color.withValues(alpha: .13),
+      ),
+      child: Icon(icon, color: color, size: 22),
+    );
+  }
+}
+
+class _AccountRoundButton extends StatelessWidget {
+  const _AccountRoundButton({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .78),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.white),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 14,
+                offset: const Offset(0, 8),
+                color: const Color(0xff6AAFE6).withValues(alpha: .18),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: const Color(0xff8B55F6), size: 23),
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountNotifyButton extends StatelessWidget {
+  const _AccountNotifyButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        const _AccountRoundButton(icon: Icons.notifications_rounded),
+        Positioned(
+          right: -3,
+          top: -5,
+          child: Container(
+            padding: const EdgeInsets.all(5),
+            decoration: const BoxDecoration(
+              color: Color(0xffFF334B),
+              shape: BoxShape.circle,
+            ),
+            child: const Text(
+              '3',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RewardTrophy extends StatelessWidget {
+  const _RewardTrophy({required this.stars, this.compact = false});
+  final int stars;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: compact ? 72 : 120,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset('assets/images/Badge.png', height: compact ? 52 : 82),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.star_rounded,
+                color: Color(0xffFFC928),
+                size: 20,
+              ),
+              Text(
+                '$stars',
+                style: const TextStyle(
+                  color: Color(0xff25305E),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const Text(
+            'Poin Kamu',
+            style: TextStyle(
+              color: Color(0xff6D718E),
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountPill extends StatelessWidget {
+  const _AccountPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailButton extends StatelessWidget {
+  const _DetailButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xff8B55F6), Color(0xff38A7FF)],
+        ),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const Text(
+        'Lihat Detail',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingData {
+  const _SettingData(this.icon, this.title, this.subtitle, this.color);
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+}
+
+class _StatData {
+  const _StatData(this.icon, this.title, this.value, this.unit, this.color);
+  final IconData icon;
+  final String title;
+  final int value;
+  final String unit;
+  final Color color;
+}
+
+BoxDecoration _accountCardDecoration({
+  double radius = 28,
+  Color shadow = const Color(0xff7AAED3),
+}) {
+  return BoxDecoration(
+    color: Colors.white.withValues(alpha: .94),
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: Colors.white, width: 1.6),
+    boxShadow: [
+      BoxShadow(
+        blurRadius: 22,
+        offset: const Offset(0, 12),
+        color: shadow.withValues(alpha: .16),
+      ),
+    ],
+  );
 }
 
 class ThemeWheel extends ConsumerWidget {
