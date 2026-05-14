@@ -161,16 +161,21 @@ class MainMenuScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStateProvider);
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
     return Align(
       alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
+        constraints: BoxConstraints(maxWidth: tablet ? 980 : 520),
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 126),
+          padding: EdgeInsets.fromLTRB(
+            tablet ? 28 : 18,
+            14,
+            tablet ? 28 : 18,
+            126,
+          ),
           children: [
-            _HomeHero(app: app),
-            const SizedBox(height: 14),
-            _LearningCenterCard(
+            _HomeHero(
+              app: app,
               onTap: () => ref.read(appStateProvider).go(TabItem.belajar),
             ),
             const SizedBox(height: 18),
@@ -178,19 +183,65 @@ class MainMenuScreen extends ConsumerWidget {
               onOpen: (mode) => ref.read(appStateProvider).openLearn(mode),
             ),
             const SizedBox(height: 18),
-            _HomeProgressPanel(progress: app.progress),
-            const SizedBox(height: 14),
-            _ModeFunCard(
-              onTap: () => ref.read(appStateProvider).go(TabItem.belajar),
-            ),
-            const SizedBox(height: 14),
-            _SongHomeCard(
-              onTap: () => ref.read(appStateProvider).go(TabItem.lagu),
-            ),
-            const SizedBox(height: 14),
-            _BadgeHomeCard(
-              onTap: () => ref.read(appStateProvider).go(TabItem.akun),
-            ),
+            if (tablet)
+              Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
+                        child: _HomeProgressPanel(progress: app.progress),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 5,
+                        child: _ModeFunCard(
+                          onTap: () =>
+                              ref.read(appStateProvider).go(TabItem.belajar),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 172,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _SongHomeCard(
+                            onTap: () =>
+                                ref.read(appStateProvider).go(TabItem.lagu),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _BadgeHomeCard(
+                            onTap: () =>
+                                ref.read(appStateProvider).go(TabItem.akun),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            else ...[
+              _HomeProgressPanel(progress: app.progress),
+              const SizedBox(height: 18),
+              _ModeFunCard(
+                onTap: () => ref.read(appStateProvider).go(TabItem.belajar),
+              ),
+              const SizedBox(height: 18),
+              _SongHomeCard(
+                onTap: () => ref.read(appStateProvider).go(TabItem.lagu),
+              ),
+              const SizedBox(height: 18),
+              _BadgeHomeCard(
+                onTap: () => ref.read(appStateProvider).go(TabItem.akun),
+              ),
+            ],
           ],
         ),
       ),
@@ -199,11 +250,13 @@ class MainMenuScreen extends ConsumerWidget {
 }
 
 class _HomeHero extends StatelessWidget {
-  const _HomeHero({required this.app});
+  const _HomeHero({required this.app, required this.onTap});
   final AppState app;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
     final name = app.childName.trim().isEmpty || app.childName == 'Teman'
         ? 'Google User'
         : app.childName.trim();
@@ -214,35 +267,14 @@ class _HomeHero extends StatelessWidget {
         ? 'assets/images/Anak_Perempuan_Menu.png'
         : 'assets/images/Anak_LakiLaki_Menu.png';
     return SizedBox(
-      height: 220,
+      height: tablet ? 260 : 238,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(34),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.asset(
-                    'assets/images/Background_image.png',
-                    fit: BoxFit.cover,
-                  ),
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withValues(alpha: .50),
-                          const Color(0xffBFEFFF).withValues(alpha: .10),
-                          const Color(0xffFFEFCB).withValues(alpha: .34),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: Stack(fit: StackFit.expand),
             ),
           ),
           Positioned(
@@ -264,11 +296,18 @@ class _HomeHero extends StatelessWidget {
                               'Halo, $name!',
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 21,
+                              style: TextStyle(
+                                fontSize: tablet ? 28 : 21,
                                 height: 1.04,
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xff3A268A),
+                                shadows: const [
+                                  Shadow(
+                                    blurRadius: 8,
+                                    color: Colors.white,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -281,14 +320,21 @@ class _HomeHero extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      const Text(
+                      Text(
                         'Ayo, petualangan belajar dimulai!',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Color(0xff595A78),
-                          fontSize: 12,
+                          fontSize: tablet ? 15 : 12,
                           fontWeight: FontWeight.w800,
+                          shadows: const [
+                            Shadow(
+                              blurRadius: 7,
+                              color: Colors.white,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -302,33 +348,22 @@ class _HomeHero extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 8,
-            bottom: -4,
-            child: Image.asset(mascot, height: 136, fit: BoxFit.contain)
-                .animate(onPlay: (c) => c.repeat(reverse: true))
-                .moveY(begin: -5, end: 5, duration: 1800.ms),
+            right: tablet ? 20 : 8,
+            bottom: tablet ? -8 : -4,
+            child:
+                Image.asset(
+                      mascot,
+                      height: tablet ? 176 : 142,
+                      fit: BoxFit.contain,
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .moveY(begin: -5, end: 5, duration: 1800.ms),
           ),
           Positioned(
-            left: 18,
-            bottom: 18,
-            child: Row(
-              children: [
-                _TinySkyChip(
-                  icon: Icons.cloud_rounded,
-                  color: const Color(0xff40C8F4),
-                ),
-                const SizedBox(width: 8),
-                _TinySkyChip(
-                  icon: Icons.star_rounded,
-                  color: const Color(0xffFFD44D),
-                ),
-                const SizedBox(width: 8),
-                _TinySkyChip(
-                  icon: Icons.auto_awesome_rounded,
-                  color: const Color(0xffFF7CB6),
-                ),
-              ],
-            ),
+            left: tablet ? 24 : 18,
+            right: tablet ? 250 : 132,
+            bottom: tablet ? 28 : 18,
+            child: _LearningCenterCard(onTap: onTap, compact: !tablet),
           ),
         ],
       ),
@@ -444,105 +479,98 @@ class _NotifyButton extends StatelessWidget {
   }
 }
 
-class _TinySkyChip extends StatelessWidget {
-  const _TinySkyChip({required this.icon, required this.color});
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .78),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white),
-      ),
-      child: Icon(icon, color: color, size: 20),
-    );
-  }
-}
-
 class _LearningCenterCard extends StatelessWidget {
-  const _LearningCenterCard({required this.onTap});
+  const _LearningCenterCard({required this.onTap, this.compact = false});
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(17),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(32),
-          gradient: const LinearGradient(
-            colors: [Color(0xff96EE31), Color(0xff21C94A)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 24,
-              offset: const Offset(0, 12),
-              color: const Color(0xff30C957).withValues(alpha: .28),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            _RoundIcon(
-              icon: Icons.menu_book_rounded,
-              color: const Color(0xff20B447),
-              bg: Colors.white,
-            ),
-            const SizedBox(width: 14),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pusat Belajar',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Pilih materi belajar favoritmu',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tiny = compact || constraints.maxWidth < 310;
+          return Container(
+            padding: EdgeInsets.all(tiny ? 12 : 17),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(tiny ? 26 : 32),
+              gradient: const LinearGradient(
+                colors: [Color(0xff96EE31), Color(0xff21C94A)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                  color: const Color(0xff30C957).withValues(alpha: .28),
+                ),
+              ],
             ),
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
-                    color: Colors.black.withValues(alpha: .12),
+            child: Row(
+              children: [
+                _RoundIcon(
+                  icon: Icons.menu_book_rounded,
+                  color: const Color(0xff20B447),
+                  bg: Colors.white,
+                  size: tiny ? 42 : 52,
+                  iconSize: tiny ? 26 : 31,
+                ),
+                SizedBox(width: tiny ? 9 : 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pusat Belajar',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: tiny ? 17 : 22,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Pilih materi belajar favoritmu',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: tiny ? 11 : 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Color(0xff1FBA48),
-                size: 20,
-              ),
+                ),
+                SizedBox(width: tiny ? 6 : 10),
+                Container(
+                  width: tiny ? 38 : 46,
+                  height: tiny ? 38 : 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
+                        color: Colors.black.withValues(alpha: .12),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: const Color(0xff1FBA48),
+                    size: tiny ? 17 : 20,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ).animate().fadeIn(duration: 350.ms, delay: 80.ms).slideY(begin: .06),
     );
   }
@@ -554,6 +582,7 @@ class _LearningGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
     final items = [
       _LearningHomeItem(
         'HURUF',
@@ -591,11 +620,11 @@ class _LearningGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: tablet ? 4 : 2,
         mainAxisSpacing: 14,
         crossAxisSpacing: 14,
-        childAspectRatio: .86,
+        childAspectRatio: tablet ? .92 : .86,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) => _LearningHomeTile(
@@ -909,7 +938,10 @@ class _SongHomeCard extends StatelessWidget {
       buttonColor: Colors.white,
       buttonIconColor: const Color(0xff8B55F6),
       buttonText: 'Putar',
-      imageHeight: 92,
+      imageHeight: 128,
+      imageWidth: 166,
+      imageRight: -24,
+      contentRightPadding: 190,
       onTap: onTap,
     );
   }
@@ -923,7 +955,7 @@ class _BadgeHomeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ActionIllustrationCard(
       title: 'Dapatkan Poin & Badge',
-      subtitle: 'Kumpulkan poin dan raih badge keren!',
+      subtitle: 'Dapatkan badge keren!',
       asset: 'assets/images/Badge.png',
       icon: Icons.workspace_premium_rounded,
       colors: const [Color(0xff19C6B3), Color(0xff20A59B)],
@@ -932,7 +964,10 @@ class _BadgeHomeCard extends StatelessWidget {
       buttonColor: Colors.white,
       buttonIconColor: const Color(0xff11A796),
       buttonText: 'Badge',
-      imageHeight: 88,
+      imageHeight: 128,
+      imageWidth: 168,
+      imageRight: -34,
+      contentRightPadding: 132,
       onTap: onTap,
     );
   }
@@ -952,6 +987,9 @@ class _ActionIllustrationCard extends StatelessWidget {
     this.textColor = const Color(0xff4D5275),
     this.buttonIconColor = Colors.white,
     this.imageHeight = 82,
+    this.imageWidth = 132,
+    this.imageRight = -12,
+    this.contentRightPadding = 118,
   });
 
   final String title;
@@ -965,6 +1003,9 @@ class _ActionIllustrationCard extends StatelessWidget {
   final Color buttonIconColor;
   final String buttonText;
   final double imageHeight;
+  final double imageWidth;
+  final double imageRight;
+  final double contentRightPadding;
   final VoidCallback onTap;
 
   @override
@@ -972,28 +1013,30 @@ class _ActionIllustrationCard extends StatelessWidget {
     final whiteButton = buttonColor == Colors.white;
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 118),
-        padding: const EdgeInsets.fromLTRB(18, 16, 12, 14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(30),
-          gradient: LinearGradient(
-            colors: colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-              color: colors.last.withValues(alpha: .22),
-            ),
-          ],
-        ),
-        child: Row(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16, right: 10),
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            Expanded(
+            Container(
+              constraints: const BoxConstraints(minHeight: 118),
+              padding: EdgeInsets.fromLTRB(18, 16, contentRightPadding, 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                gradient: LinearGradient(
+                  colors: colors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                    color: colors.last.withValues(alpha: .22),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -1060,12 +1103,16 @@ class _ActionIllustrationCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
-            Image.asset(
-              asset,
-              height: imageHeight,
-              width: 122,
-              fit: BoxFit.contain,
+            Positioned(
+              right: imageRight,
+              top: -18,
+              bottom: -10,
+              child: Image.asset(
+                asset,
+                height: imageHeight,
+                width: imageWidth,
+                fit: BoxFit.contain,
+              ),
             ),
           ],
         ),
@@ -1131,18 +1178,26 @@ class _Glass extends StatelessWidget {
 }
 
 class _RoundIcon extends StatelessWidget {
-  const _RoundIcon({required this.icon, required this.color, required this.bg});
+  const _RoundIcon({
+    required this.icon,
+    required this.color,
+    required this.bg,
+    this.size = 52,
+    this.iconSize = 31,
+  });
   final IconData icon;
   final Color color;
   final Color bg;
+  final double size;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 52,
-      height: 52,
+      width: size,
+      height: size,
       decoration: BoxDecoration(shape: BoxShape.circle, color: bg),
-      child: Icon(icon, color: color, size: 31),
+      child: Icon(icon, color: color, size: iconSize),
     );
   }
 }

@@ -28,10 +28,10 @@ class AppState extends ChangeNotifier {
   bool ready = false;
 
   final Map<String, int> progress = {
-    'membaca': 65,
-    'angka': 40,
-    'benda': 85,
-    'iqra': 25,
+    'membaca': 0,
+    'angka': 0,
+    'benda': 0,
+    'iqra': 0,
   };
 
   final List<LearningObject> objects = [...objectsData];
