@@ -909,7 +909,7 @@ class _ModeFunCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ActionIllustrationCard(
       title: 'Mode Seru',
-      subtitle: 'Belajar dengan suara lebih menyenangkan!',
+      subtitle: 'Belajar dengan lebih menantang',
       asset: 'assets/images/Mic.png',
       icon: Icons.mic_rounded,
       colors: const [Color(0xffFFF5C9), Color(0xffFFE1E8)],
@@ -941,7 +941,7 @@ class _SongHomeCard extends StatelessWidget {
       imageHeight: 128,
       imageWidth: 166,
       imageRight: -24,
-      contentRightPadding: 190,
+      contentRightPadding: 220,
       onTap: onTap,
     );
   }
@@ -967,7 +967,7 @@ class _BadgeHomeCard extends StatelessWidget {
       imageHeight: 128,
       imageWidth: 168,
       imageRight: -34,
-      contentRightPadding: 132,
+      contentRightPadding: 152,
       onTap: onTap,
     );
   }
