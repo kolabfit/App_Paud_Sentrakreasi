@@ -6,7 +6,6 @@ class ShellScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStateProvider);
-    final t = app.theme;
     final teacherHome = app.role == Role.teacher;
     Widget body;
     if (teacherHome && app.tab == TabItem.akun) {
@@ -20,7 +19,8 @@ class ShellScreen extends ConsumerWidget {
       };
     }
     return Scaffold(
-      extendBody: true,
+      backgroundColor: const Color(0xffF7FBFF),
+      extendBody: false,
       body: ThemedBackground(
         child: SafeArea(
           child: AnimatedSwitcher(
@@ -42,65 +42,52 @@ class ShellScreen extends ConsumerWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _FancyBottomNav(app: app, t: t),
+      bottomNavigationBar: _FancyBottomNav(app: app),
     );
   }
 }
 
 class _FancyBottomNav extends ConsumerWidget {
-  const _FancyBottomNav({required this.app, required this.t});
+  const _FancyBottomNav({required this.app});
   final AppState app;
-  final AppThemeData t;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIdx = TabItem.values.indexOf(app.tab);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(34),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: .88),
-            borderRadius: BorderRadius.circular(34),
-            border: Border.all(color: Colors.white.withValues(alpha: .88)),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 34,
-                offset: const Offset(0, 16),
-                color: const Color(0xff8B55F6).withValues(alpha: .18),
-              ),
-              BoxShadow(
-                blurRadius: 28,
-                color: const Color(0xff53D5B5).withValues(alpha: .12),
-              ),
-            ],
+    return Container(
+      margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(34),
+        border: Border.all(color: const Color(0xffEEF2FF)),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+            color: const Color(0xff5D6B9A).withValues(alpha: .16),
           ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
-              children: List.generate(4, (i) {
-                final icons = [
-                  Icons.home_rounded,
-                  Icons.menu_book_rounded,
-                  Icons.music_note_rounded,
-                  Icons.person_rounded,
-                ];
-                final labels = ['Main', 'Belajar', 'Lagu Anak', 'Akun'];
-                return Expanded(
-                  child: _NavItem(
-                    icon: icons[i],
-                    label: labels[i],
-                    isActive: selectedIdx == i,
-                    theme: t,
-                    onTap: () =>
-                        ref.read(appStateProvider).go(TabItem.values[i]),
-                  ),
-                );
-              }),
-            ),
-          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Row(
+          children: List.generate(4, (i) {
+            final icons = [
+              Icons.home_rounded,
+              Icons.menu_book_rounded,
+              Icons.music_note_rounded,
+              Icons.person_rounded,
+            ];
+            final labels = ['Main', 'Belajar', 'Lagu Anak', 'Akun'];
+            return Expanded(
+              child: _NavItem(
+                icon: icons[i],
+                label: labels[i],
+                isActive: selectedIdx == i,
+                onTap: () => ref.read(appStateProvider).go(TabItem.values[i]),
+              ),
+            );
+          }),
         ),
       ),
     );
@@ -112,18 +99,16 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.isActive,
-    required this.theme,
     required this.onTap,
   });
   final IconData icon;
   final String label;
   final bool isActive;
-  final AppThemeData theme;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = theme.dark ? theme.accent : const Color(0xff8B57F5);
+    const activeColor = Color(0xff1498BD);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(

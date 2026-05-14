@@ -1415,14 +1415,14 @@ class _IqraHeroSection extends StatelessWidget {
                             style: TextStyle(
                               fontSize: tablet ? 54 : 40,
                               height: .95,
-                              color: const Color(0xff5B35C8),
+                              color: const Color(0xff1498BD),
                               fontWeight: FontWeight.w900,
                               letterSpacing: 0,
                               shadows: [
                                 Shadow(
                                   blurRadius: 18,
                                   color: const Color(
-                                    0xffB688FF,
+                                    0xff40C8F4,
                                   ).withValues(alpha: .42),
                                 ),
                                 const Shadow(
@@ -1449,7 +1449,7 @@ class _IqraHeroSection extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                color: Color(0xff51467F),
+                                color: Color(0xff335D73),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -1514,7 +1514,7 @@ class _IqraCircleButton extends StatelessWidget {
       filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
       child: Material(
         color: active
-            ? const Color(0xff8B55F6).withValues(alpha: .92)
+            ? const Color(0xff1498BD).withValues(alpha: .92)
             : Colors.white.withValues(alpha: .86),
         child: InkWell(
           onTap: onTap,
@@ -1526,7 +1526,7 @@ class _IqraCircleButton extends StatelessWidget {
               children: [
                 Icon(
                   icon,
-                  color: active ? Colors.white : const Color(0xff7B55DA),
+                  color: active ? Colors.white : const Color(0xff1498BD),
                   size: label == null ? 31 : 22,
                 ),
                 if (label != null)
@@ -1535,7 +1535,7 @@ class _IqraCircleButton extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: active ? Colors.white : const Color(0xff5B4B84),
+                      color: active ? Colors.white : const Color(0xff335D73),
                       fontSize: 8,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1565,7 +1565,7 @@ class _IqraPointsPill extends StatelessWidget {
         BoxShadow(
           blurRadius: 18,
           offset: const Offset(0, 8),
-          color: const Color(0xff8B55F6).withValues(alpha: .13),
+          color: const Color(0xff1498BD).withValues(alpha: .13),
         ),
       ],
     ),
@@ -1627,7 +1627,7 @@ class _IqraProgressCard extends StatelessWidget {
           BoxShadow(
             blurRadius: 28,
             offset: const Offset(0, 14),
-            color: const Color(0xff7C55FF).withValues(alpha: .14),
+            color: const Color(0xff1498BD).withValues(alpha: .14),
           ),
         ],
       ),
@@ -1651,13 +1651,13 @@ class _IqraProgressCard extends StatelessWidget {
                       backgroundColor: const Color(
                         0xffEADFFF,
                       ).withValues(alpha: .85),
-                      color: const Color(0xff8B55F6),
+                      color: const Color(0xff1498BD),
                     ),
                   ),
                   Text(
                     '$progress%',
                     style: const TextStyle(
-                      color: Color(0xff6B3EE4),
+                      color: Color(0xff1498BD),
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
                     ),
@@ -1801,7 +1801,7 @@ class _IqraCatalogSection extends StatelessWidget {
                 maxCrossAxisExtent: maxExtent,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: constraints.maxWidth >= 760 ? .78 : .70,
+                childAspectRatio: constraints.maxWidth >= 760 ? .72 : .62,
               ),
               itemBuilder: (context, i) {
                 final item = iqraData[i];
@@ -1875,7 +1875,7 @@ class _IqraLetterCard extends StatelessWidget {
 
   Color get statusColor {
     if (mastered) return const Color(0xff38C985);
-    if (selected) return const Color(0xff39A8FF);
+    if (selected) return const Color(0xff1498BD);
     return const Color(0xff9EA5BC);
   }
 
@@ -1952,19 +1952,25 @@ class _IqraLetterCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const Spacer(),
-                Text(
-                  item.char,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontFamily: 'serif',
-                    fontSize: 58,
-                    height: .9,
-                    color: Color(0xff22264D),
-                    fontWeight: FontWeight.w900,
+                const Spacer(flex: 2),
+                SizedBox(
+                  height: 74,
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: Text(
+                      item.char,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'serif',
+                        fontSize: 66,
+                        height: 1.08,
+                        color: Color(0xff22264D),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
                 Text(
                   item.latin,
                   maxLines: 1,
@@ -2002,7 +2008,7 @@ class _IqraLetterCard extends StatelessWidget {
                           : Icons.mic_rounded,
                       color: listening
                           ? Colors.redAccent
-                          : const Color(0xff8B55F6),
+                          : const Color(0xff1498BD),
                       onTap: onPractice,
                     ),
                   ],
@@ -2088,7 +2094,7 @@ class _IqraModeSeruSection extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
                 gradient: const LinearGradient(
-                  colors: [Color(0xff6B4DFF), Color(0xff39A8FF)],
+                  colors: [Color(0xff1498BD), Color(0xff40C8F4)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -2096,7 +2102,7 @@ class _IqraModeSeruSection extends StatelessWidget {
                   BoxShadow(
                     blurRadius: 26,
                     offset: const Offset(0, 14),
-                    color: const Color(0xff6B4DFF).withValues(alpha: .24),
+                    color: const Color(0xff1498BD).withValues(alpha: .24),
                   ),
                 ],
               ),
@@ -2396,11 +2402,11 @@ class _IqraSectionCard extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 18,
-                    color: const Color(0xff8B55F6).withValues(alpha: .18),
+                    color: const Color(0xff1498BD).withValues(alpha: .18),
                   ),
                 ],
               ),
-              child: Icon(icon, color: const Color(0xff7B55DA), size: 24),
+              child: Icon(icon, color: const Color(0xff1498BD), size: 24),
             ),
             const SizedBox(width: 11),
             Expanded(
