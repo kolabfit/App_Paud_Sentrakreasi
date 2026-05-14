@@ -927,7 +927,7 @@ class _ModeFunCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ActionIllustrationCard(
       title: 'Mode Seru',
-      subtitle: 'Belajar dengan lebih',
+      subtitle: 'Belajar dengan lebih Menantang',
       asset: 'assets/images/Mic.png',
       icon: Icons.mic_rounded,
       colors: const [Color(0xffFFF5C9), Color(0xffFFE1E8)],

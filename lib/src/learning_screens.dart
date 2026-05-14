@@ -28,9 +28,13 @@ class _BelajarScreenState extends ConsumerState<BelajarScreen> {
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
     final body = modeBody(app);
-    return app.learnMode == LearnMode.menu || app.learnMode == LearnMode.iqra
-        ? body
-        : PagePad(child: body);
+    return switch (app.learnMode) {
+      LearnMode.menu ||
+      LearnMode.huruf ||
+      LearnMode.angka ||
+      LearnMode.benda ||
+      LearnMode.iqra => body,
+    };
   }
 
   Widget modeBody(AppState app) {
@@ -543,12 +547,38 @@ class HurufScreen extends ConsumerStatefulWidget {
 
 class _HurufScreenState extends ConsumerState<HurufScreen> {
   final tts = FlutterTts();
-  int letterIndex = 0;
-  int objectIndex = 0;
+  final speech = stt.SpeechToText();
+  final search = TextEditingController();
+  int pageIndex = 0;
   bool seru = false;
+  bool speechReady = false;
+  bool listening = false;
+  String heard = '';
+  String voiceFeedback = 'Tekan mic pada kartu lalu ucapkan katanya.';
+  String category = 'Semua Huruf';
+
+  @override
+  void initState() {
+    super.initState();
+    initSpeech();
+  }
+
+  Future<void> initSpeech() async {
+    speechReady = await speech.initialize();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    search.dispose();
+    speech.stop();
+    tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final app = ref.watch(appStateProvider);
     if (seru) {
       return ModeSeruScreen(
         category: 'huruf',
@@ -556,126 +586,106 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
         onClose: () => setState(() => seru = false),
       );
     }
-    final app = ref.watch(appStateProvider);
-    final t = app.theme;
-    final data = lettersData[letterIndex];
-    final obj = data.objects[objectIndex];
-    return Column(
-      children: [
-        LessonTopBar(
-          title: 'Kamus Huruf',
-          color: t.dark ? Colors.orange.shade200 : Colors.orange.shade700,
-          onPrev: () => setState(() {
-            letterIndex =
-                (letterIndex - 1 + lettersData.length) % lettersData.length;
-            objectIndex = 0;
-          }),
-          onNext: () => setState(() {
-            letterIndex = (letterIndex + 1) % lettersData.length;
-            objectIndex = 0;
-          }),
-          onSeru: () => setState(() => seru = true),
-        ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              runSpacing: 24,
-              spacing: 24,
-              children: [
-                TactilePanel(
-                  width: 360,
-                  height: 360,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text(
-                        data.letter,
-                        style: TextStyle(
-                          fontSize: 150,
-                          fontWeight: FontWeight.w900,
-                          color: t.primary,
-                        ),
-                      ),
-                      Text(
-                        data.letter.toLowerCase(),
-                        style: TextStyle(
-                          fontSize: 104,
-                          fontWeight: FontWeight.w900,
-                          color: t.primary.withValues(alpha: .32),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TactilePanel(
-                  width: 360,
-                  height: 360,
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.topRight,
-                        child: IconButton.filled(
-                          onPressed: () => setState(() {
-                            objectIndex = Random().nextInt(data.objects.length);
-                          }),
-                          icon: const Icon(Icons.shuffle),
-                        ),
-                      ),
-                      Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            SizedBox(
-                                  width: 220,
-                                  height: 190,
-                                  child: AppImage(
-                                    url: obj.img,
-                                    fit: BoxFit.contain,
-                                  ),
-                                )
-                                .animate(onPlay: (c) => c.repeat(reverse: true))
-                                .moveY(begin: -8, end: 8),
-                            const SizedBox(height: 16),
-                            Chip(
-                              label: Text(
-                                obj.name,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        FilledButton(
-          onPressed: () async {
-            await speakIndonesian(tts, '${data.letter}. ${obj.name}');
+    final query = search.text.toLowerCase().trim();
+    final filtered = lettersData.where((item) {
+      final isVowel = 'AIUEO'.contains(item.letter);
+      final obj = item.objects.first;
+      final categoryOk =
+          category == 'Semua Huruf' ||
+          (category == 'Vokal' && isVowel) ||
+          (category == 'Konsonan' && !isVowel);
+      final queryOk =
+          query.isEmpty ||
+          item.letter.toLowerCase().contains(query) ||
+          obj.name.toLowerCase().contains(query);
+      return categoryOk && queryOk;
+    }).toList();
+    return _PremiumLearningScaffold(
+      titleAsset: 'assets/images/Belajar_huruf.png',
+      mascotAsset: 'assets/images/Anak_Belajar_Huruf.png',
+      fallbackTitle: 'Belajar Huruf',
+      subtitle: 'Ayo mengenal huruf A sampai Z!',
+      accent: const Color(0xffFF8F1F),
+      stars: app.stars,
+      onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
+      onGuide: () => setState(() => seru = true),
+      chips: const ['Semua Huruf', 'Vokal', 'Konsonan'],
+      selectedChip: category,
+      onChip: (value) => setState(() {
+        category = value;
+        pageIndex = 0;
+      }),
+      search: search,
+      searchHint: 'Cari huruf...',
+      onSearch: () => setState(() => pageIndex = 0),
+      itemCount: filtered.length,
+      pageIndex: pageIndex,
+      onPage: (next) => setState(() => pageIndex = next),
+      heard: heard,
+      voiceFeedback: voiceFeedback,
+      listening: listening,
+      itemBuilder: (context, itemIndex, color) {
+        final item = filtered[itemIndex];
+        final obj = item.objects.first;
+        return _PremiumLearningCard(
+          color: color,
+          title: item.letter,
+          subtitle: 'Huruf ${item.letter}',
+          caption: obj.name,
+          imageUrl: obj.img,
+          badge: obj.name.toLowerCase(),
+          kind: _PremiumCardKind.letter,
+          onAudio: () async {
+            await speakIndonesian(tts, '${item.letter}. ${obj.name}');
             await ref.read(appStateProvider).bump('membaca', 4);
           },
-          child: const Text('Dengarkan'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-          child: const Text('SELESAI BELAJAR'),
-        ),
-        const SizedBox(height: 110),
-      ],
+          onMic: () => listenForProgress(
+            expected: obj.name,
+            successText: 'Pintar! Huruf ${item.letter} cocok.',
+            progressKey: 'membaca',
+            amount: 6,
+          ),
+          listening: listening,
+        );
+      },
+    );
+  }
+
+  Future<void> listenForProgress({
+    required String expected,
+    required String successText,
+    required String progressKey,
+    required int amount,
+  }) async {
+    if (!speechReady) {
+      setState(() => voiceFeedback = 'Mic belum siap. Coba di device Android.');
+      return;
+    }
+    setState(() {
+      listening = true;
+      heard = '';
+      voiceFeedback = 'Mendengarkan... ucapkan "$expected".';
+    });
+    await speech.listen(
+      localeId: 'id_ID',
+      onResult: (result) async {
+        if (!mounted) return;
+        setState(() => heard = result.recognizedWords);
+        if (!result.finalResult) return;
+        await speech.stop();
+        final ok = _voiceMatches(result.recognizedWords, expected);
+        if (!mounted) return;
+        if (ok) {
+          await ref.read(appStateProvider).bump(progressKey, amount);
+          await speakIndonesian(tts, 'Hebat, benar');
+        }
+        setState(() {
+          listening = false;
+          voiceFeedback = ok
+              ? successText
+              : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+        });
+      },
     );
   }
 }
@@ -689,11 +699,38 @@ class AngkaScreen extends ConsumerStatefulWidget {
 
 class _AngkaScreenState extends ConsumerState<AngkaScreen> {
   final tts = FlutterTts();
-  int index = 0;
+  final speech = stt.SpeechToText();
+  final search = TextEditingController();
+  int pageIndex = 0;
   bool seru = false;
+  bool speechReady = false;
+  bool listening = false;
+  String heard = '';
+  String voiceFeedback = 'Tekan mic pada kartu lalu ucapkan angkanya.';
+  String category = 'Semua Angka';
+
+  @override
+  void initState() {
+    super.initState();
+    initSpeech();
+  }
+
+  Future<void> initSpeech() async {
+    speechReady = await speech.initialize();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    search.dispose();
+    speech.stop();
+    tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final app = ref.watch(appStateProvider);
     if (seru) {
       return ModeSeruScreen(
         category: 'angka',
@@ -701,79 +738,104 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
         onClose: () => setState(() => seru = false),
       );
     }
-    final current = numbersData[index];
-    return Column(
-      children: [
-        LessonTopBar(
-          title: 'Angka ${current.number}',
-          color: Colors.blue,
-          onPrev: () => setState(
-            () => index = (index - 1 + numbersData.length) % numbersData.length,
-          ),
-          onNext: () =>
-              setState(() => index = (index + 1) % numbersData.length),
-          onSeru: () => setState(() => seru = true),
-        ),
-        Expanded(
-          child: Center(
-            child: TactilePanel(
-              width: 400,
-              height: 430,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Text(
-                    current.number,
-                    style: TextStyle(
-                      fontSize: 230,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.blue.withValues(alpha: .08),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 270,
-                        height: 230,
-                        child: AppImage(url: current.img, fit: BoxFit.contain),
-                      ),
-                      const SizedBox(height: 14),
-                      Chip(
-                        label: Text(
-                          current.name,
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        FilledButton(
-          onPressed: () async {
-            await speakIndonesian(tts, current.name);
+    final query = search.text.toLowerCase().trim();
+    final filtered = numbersData.where((item) {
+      final n = int.tryParse(item.number) ?? 0;
+      final categoryOk =
+          category == 'Semua Angka' ||
+          (category == 'Ganjil' && n.isOdd) ||
+          (category == 'Genap' && n.isEven);
+      final queryOk =
+          query.isEmpty ||
+          item.number.contains(query) ||
+          item.name.toLowerCase().contains(query);
+      return categoryOk && queryOk;
+    }).toList();
+    return _PremiumLearningScaffold(
+      titleAsset: 'assets/images/Belajar_Angka.png',
+      mascotAsset: 'assets/images/Anak_Belajar_Angka.png',
+      fallbackTitle: 'Belajar Angka',
+      subtitle: 'Yuk belajar angka 1 sampai 10!',
+      accent: const Color(0xff4E8BFF),
+      stars: app.stars,
+      onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
+      onGuide: () => setState(() => seru = true),
+      chips: const ['Semua Angka', 'Ganjil', 'Genap'],
+      selectedChip: category,
+      onChip: (value) => setState(() {
+        category = value;
+        pageIndex = 0;
+      }),
+      search: search,
+      searchHint: 'Cari angka...',
+      onSearch: () => setState(() => pageIndex = 0),
+      itemCount: filtered.length,
+      pageIndex: pageIndex,
+      onPage: (next) => setState(() => pageIndex = next),
+      heard: heard,
+      voiceFeedback: voiceFeedback,
+      listening: listening,
+      itemBuilder: (context, itemIndex, color) {
+        final item = filtered[itemIndex];
+        return _PremiumLearningCard(
+          color: color,
+          title: item.number,
+          subtitle: item.name,
+          caption: 'Angka ${item.number}',
+          imageUrl: item.img,
+          badge: _numberBadge(item.number),
+          kind: _PremiumCardKind.number,
+          onAudio: () async {
+            await speakIndonesian(tts, item.name);
             await ref.read(appStateProvider).bump('angka', 5);
-            setState(() => index = (index + 1) % numbersData.length);
           },
-          child: const Text('Lanjut'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-          child: const Text('Selesai'),
-        ),
-        const SizedBox(height: 110),
-      ],
+          onMic: () => listenForProgress(
+            expected: item.name,
+            successText: 'Mantap! Angka ${item.number} benar.',
+            progressKey: 'angka',
+            amount: 7,
+          ),
+          listening: listening,
+        );
+      },
+    );
+  }
+
+  Future<void> listenForProgress({
+    required String expected,
+    required String successText,
+    required String progressKey,
+    required int amount,
+  }) async {
+    if (!speechReady) {
+      setState(() => voiceFeedback = 'Mic belum siap. Coba di device Android.');
+      return;
+    }
+    setState(() {
+      listening = true;
+      heard = '';
+      voiceFeedback = 'Mendengarkan... ucapkan "$expected".';
+    });
+    await speech.listen(
+      localeId: 'id_ID',
+      onResult: (result) async {
+        if (!mounted) return;
+        setState(() => heard = result.recognizedWords);
+        if (!result.finalResult) return;
+        await speech.stop();
+        final ok = _voiceMatches(result.recognizedWords, expected);
+        if (!mounted) return;
+        if (ok) {
+          await ref.read(appStateProvider).bump(progressKey, amount);
+          await speakIndonesian(tts, 'Hebat, benar');
+        }
+        setState(() {
+          listening = false;
+          voiceFeedback = ok
+              ? successText
+              : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+        });
+      },
     );
   }
 }
@@ -787,8 +849,35 @@ class BendaScreen extends ConsumerStatefulWidget {
 
 class _BendaScreenState extends ConsumerState<BendaScreen> {
   final tts = FlutterTts();
-  int index = 0;
+  final speech = stt.SpeechToText();
+  final search = TextEditingController();
+  int pageIndex = 0;
   bool seru = false;
+  bool speechReady = false;
+  bool listening = false;
+  String heard = '';
+  String voiceFeedback = 'Tekan mic pada kartu lalu ucapkan nama bendanya.';
+  String category = 'Semua';
+  final Set<String> favorites = {};
+
+  @override
+  void initState() {
+    super.initState();
+    initSpeech();
+  }
+
+  Future<void> initSpeech() async {
+    speechReady = await speech.initialize();
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    search.dispose();
+    speech.stop();
+    tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -801,227 +890,1175 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
       );
     }
     final objects = app.objects;
-    final current = objects[index % objects.length];
-    return Column(
-      children: [
-        LessonTopBar(
-          title: current.name,
-          color: Colors.green,
-          onPrev: () => setState(
-            () => index = (index - 1 + objects.length) % objects.length,
+    final query = search.text.toLowerCase().trim();
+    final filtered = objects.where((item) {
+      final family = _objectFamily(item);
+      final categoryOk = category == 'Semua' || category == family;
+      final queryOk =
+          query.isEmpty ||
+          item.name.toLowerCase().contains(query) ||
+          _englishName(item.name).contains(query);
+      return categoryOk && queryOk;
+    }).toList();
+    return _PremiumLearningScaffold(
+      titleAsset: 'assets/images/Belajar_Benda.png',
+      mascotAsset: 'assets/images/Anak_Belajar_Benda.png',
+      fallbackTitle: 'Belajar Benda',
+      subtitle: 'Mengenal benda di sekitar kita',
+      accent: const Color(0xff32C653),
+      stars: app.stars,
+      onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
+      onGuide: () => setState(() => seru = true),
+      chips: const ['Semua', 'Rumah', 'Sekolah', 'Alam', 'Transportasi'],
+      selectedChip: category,
+      onChip: (value) => setState(() {
+        category = value;
+        pageIndex = 0;
+      }),
+      search: search,
+      searchHint: 'Cari benda...',
+      onSearch: () => setState(() => pageIndex = 0),
+      itemCount: filtered.length,
+      pageIndex: pageIndex,
+      onPage: (next) => setState(() => pageIndex = next),
+      heard: heard,
+      voiceFeedback: voiceFeedback,
+      listening: listening,
+      itemBuilder: (context, itemIndex, color) {
+        final item = filtered[itemIndex];
+        final fav = favorites.contains(item.name);
+        return _PremiumLearningCard(
+          color: color,
+          title: item.name,
+          subtitle: item.name,
+          caption: _englishName(item.name),
+          imageUrl: item.img,
+          badge: _objectFamily(item),
+          kind: _PremiumCardKind.object,
+          favorite: fav,
+          onFavorite: () => setState(() {
+            fav ? favorites.remove(item.name) : favorites.add(item.name);
+          }),
+          onAudio: () async {
+            await speakIndonesian(tts, item.name);
+            await ref.read(appStateProvider).bump('benda', 5);
+          },
+          onMic: () => listenForProgress(
+            expected: item.name,
+            successText: 'Keren! ${item.name} cocok.',
+            progressKey: 'benda',
+            amount: 7,
           ),
-          onNext: () => setState(() => index = (index + 1) % objects.length),
-          onSeru: () => setState(() => seru = true),
+          listening: listening,
+        );
+      },
+    );
+  }
+
+  Future<void> listenForProgress({
+    required String expected,
+    required String successText,
+    required String progressKey,
+    required int amount,
+  }) async {
+    if (!speechReady) {
+      setState(() => voiceFeedback = 'Mic belum siap. Coba di device Android.');
+      return;
+    }
+    setState(() {
+      listening = true;
+      heard = '';
+      voiceFeedback = 'Mendengarkan... ucapkan "$expected".';
+    });
+    await speech.listen(
+      localeId: 'id_ID',
+      onResult: (result) async {
+        if (!mounted) return;
+        setState(() => heard = result.recognizedWords);
+        if (!result.finalResult) return;
+        await speech.stop();
+        final ok = _voiceMatches(result.recognizedWords, expected);
+        if (!mounted) return;
+        if (ok) {
+          await ref.read(appStateProvider).bump(progressKey, amount);
+          await speakIndonesian(tts, 'Hebat, benar');
+        }
+        setState(() {
+          listening = false;
+          voiceFeedback = ok
+              ? successText
+              : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+        });
+      },
+    );
+  }
+}
+
+typedef _PremiumItemBuilder =
+    Widget Function(BuildContext context, int index, Color color);
+
+enum _PremiumCardKind { letter, number, object }
+
+class _PremiumLearningScaffold extends StatelessWidget {
+  const _PremiumLearningScaffold({
+    required this.titleAsset,
+    required this.mascotAsset,
+    required this.fallbackTitle,
+    required this.subtitle,
+    required this.accent,
+    required this.stars,
+    required this.onBack,
+    required this.onGuide,
+    required this.chips,
+    required this.selectedChip,
+    required this.onChip,
+    required this.search,
+    required this.searchHint,
+    required this.onSearch,
+    required this.itemCount,
+    required this.pageIndex,
+    required this.onPage,
+    required this.heard,
+    required this.voiceFeedback,
+    required this.listening,
+    required this.itemBuilder,
+  });
+
+  final String titleAsset;
+  final String mascotAsset;
+  final String fallbackTitle;
+  final String subtitle;
+  final Color accent;
+  final int stars;
+  final VoidCallback onBack;
+  final VoidCallback onGuide;
+  final List<String> chips;
+  final String selectedChip;
+  final ValueChanged<String> onChip;
+  final TextEditingController search;
+  final String searchHint;
+  final VoidCallback onSearch;
+  final int itemCount;
+  final int pageIndex;
+  final ValueChanged<int> onPage;
+  final String heard;
+  final String voiceFeedback;
+  final bool listening;
+  final _PremiumItemBuilder itemBuilder;
+
+  static const colors = [
+    Color(0xffffe4ef),
+    Color(0xffe4f3ff),
+    Color(0xfffff2cc),
+    Color(0xffe4f9df),
+    Color(0xffefe5ff),
+    Color(0xffffead9),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final tablet = width >= 760;
+    final columns = tablet ? (width >= 1020 ? 4 : 3) : 2;
+    final perPage = columns * (tablet ? 2 : 3);
+    final pages = max(1, (itemCount / perPage).ceil());
+    final page = pageIndex.clamp(0, pages - 1);
+    final start = page * perPage;
+    final end = min(itemCount, start + perPage);
+    final visible = itemCount == 0
+        ? <int>[]
+        : List.generate(end - start, (i) => start + i);
+
+    return Stack(
+      children: [
+        const Positioned.fill(child: _KidsDreamBackground()),
+        ListView(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 118),
+          children: [
+            _PremiumLearningHero(
+              titleAsset: titleAsset,
+              mascotAsset: mascotAsset,
+              fallbackTitle: fallbackTitle,
+              subtitle: subtitle,
+              accent: accent,
+              stars: stars,
+              onBack: onBack,
+              onGuide: onGuide,
+            ),
+            const SizedBox(height: 14),
+            _PremiumSearchAndChips(
+              search: search,
+              hint: searchHint,
+              chips: chips,
+              selected: selectedChip,
+              accent: accent,
+              onChanged: onSearch,
+              onChip: onChip,
+            ),
+            const SizedBox(height: 14),
+            _VoiceProgressPanel(
+              heard: heard,
+              feedback: voiceFeedback,
+              listening: listening,
+              accent: accent,
+            ),
+            const SizedBox(height: 14),
+            if (visible.isEmpty)
+              _PremiumEmptyState(accent: accent)
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: visible.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: 14,
+                  crossAxisSpacing: 14,
+                  childAspectRatio: tablet ? .78 : .68,
+                ),
+                itemBuilder: (context, i) {
+                  final item = visible[i];
+                  return itemBuilder(
+                    context,
+                    item,
+                    colors[item % colors.length],
+                  );
+                },
+              ),
+            const SizedBox(height: 16),
+            _PremiumPagination(
+              page: page,
+              pages: pages,
+              accent: accent,
+              onPrev: () => onPage(max(0, page - 1)),
+              onNext: () => onPage(min(pages - 1, page + 1)),
+            ),
+            const SizedBox(height: 16),
+            _LearningMotivationPanel(accent: accent),
+          ],
         ),
-        Expanded(
-          child: Center(
-            child: TactilePanel(
-              width: 400,
-              height: 430,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 275,
-                    height: 245,
-                    child: AppImage(url: current.img, fit: BoxFit.contain),
-                  ),
-                  const SizedBox(height: 20),
-                  Chip(
-                    label: Text(
-                      current.name,
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 12,
-                    ),
+      ],
+    );
+  }
+}
+
+class _KidsDreamBackground extends StatelessWidget {
+  const _KidsDreamBackground();
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      Image.asset(
+        'assets/images/Background_image.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+      ),
+      DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.white.withValues(alpha: .03),
+              Colors.white.withValues(alpha: .18),
+              Colors.white.withValues(alpha: .88),
+            ],
+            stops: const [0, .44, 1],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+      ),
+      ...List.generate(16, (i) {
+        return Positioned(
+          left: (i * 61 % 320).toDouble() + (i.isEven ? 12 : 80),
+          top: 48.0 + (i * 43 % 440),
+          child:
+              Icon(
+                    i.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
+                    color: Colors.white.withValues(alpha: .75),
+                    size: 12 + (i % 4) * 3,
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .moveY(begin: -5, end: 6, duration: (1300 + i * 80).ms),
+        );
+      }),
+    ],
+  );
+}
+
+class _PremiumLearningHero extends StatelessWidget {
+  const _PremiumLearningHero({
+    required this.titleAsset,
+    required this.mascotAsset,
+    required this.fallbackTitle,
+    required this.subtitle,
+    required this.accent,
+    required this.stars,
+    required this.onBack,
+    required this.onGuide,
+  });
+
+  final String titleAsset;
+  final String mascotAsset;
+  final String fallbackTitle;
+  final String subtitle;
+  final Color accent;
+  final int stars;
+  final VoidCallback onBack;
+  final VoidCallback onGuide;
+
+  @override
+  Widget build(BuildContext context) {
+    final tablet = MediaQuery.sizeOf(context).width >= 760;
+    return SizedBox(
+      height: tablet ? 286 : 252,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(32),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: .50),
+                    accent.withValues(alpha: .15),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 30,
+                    offset: const Offset(0, 16),
+                    color: accent.withValues(alpha: .18),
                   ),
                 ],
               ),
             ),
           ),
-        ),
-        FilledButton(
-          onPressed: () async {
-            await speakIndonesian(tts, current.name);
-            await ref.read(appStateProvider).bump('benda', 5);
-            setState(() => index = (index + 1) % objects.length);
-          },
-          child: const Text('Lanjut'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton(
-          onPressed: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-          child: const Text('Selesai'),
-        ),
-        const SizedBox(height: 110),
-      ],
-    );
+          Positioned(
+            left: 12,
+            right: 12,
+            top: 12,
+            child: Row(
+              children: [
+                _PremiumRoundButton(
+                  icon: Icons.chevron_left_rounded,
+                  onTap: onBack,
+                  color: accent,
+                ),
+                const Spacer(),
+                _PremiumPoints(stars: stars),
+                const SizedBox(width: 8),
+                _PremiumRoundButton(
+                  icon: Icons.menu_book_rounded,
+                  onTap: onGuide,
+                  color: accent,
+                  label: 'Panduan',
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: tablet ? 24 : 14,
+            top: tablet ? 58 : 62,
+            width: tablet ? 470 : 270,
+            child: Image.asset(
+              titleAsset,
+              height: tablet ? 168 : 126,
+              fit: BoxFit.contain,
+              alignment: Alignment.centerLeft,
+              filterQuality: FilterQuality.high,
+              errorBuilder: (context, error, stackTrace) => Container(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                decoration: BoxDecoration(
+                  color: accent,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      fallbackTitle,
+                      style: TextStyle(
+                        fontSize: tablet ? 42 : 28,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: tablet ? 18 : -18,
+            bottom: -4,
+            child:
+                Image.asset(
+                      mascotAsset,
+                      height: tablet ? 238 : 184,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        'assets/images/Anak_hebat.png',
+                        height: tablet ? 210 : 158,
+                        fit: BoxFit.contain,
+                      ),
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .moveY(begin: -5, end: 6, duration: 1700.ms),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: .04);
   }
 }
 
-class LessonTopBar extends StatelessWidget {
-  const LessonTopBar({
-    required this.title,
-    required this.color,
-    required this.onPrev,
-    required this.onNext,
-    required this.onSeru,
-    super.key,
+class _PremiumSearchAndChips extends StatelessWidget {
+  const _PremiumSearchAndChips({
+    required this.search,
+    required this.hint,
+    required this.chips,
+    required this.selected,
+    required this.accent,
+    required this.onChanged,
+    required this.onChip,
   });
-  final String title;
-  final Color color;
-  final VoidCallback onPrev;
-  final VoidCallback onNext;
-  final VoidCallback onSeru;
+
+  final TextEditingController search;
+  final String hint;
+  final List<String> chips;
+  final String selected;
+  final Color accent;
+  final VoidCallback onChanged;
+  final ValueChanged<String> onChip;
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton.filledTonal(
-          onPressed: onPrev,
-          icon: const Icon(Icons.chevron_left, size: 32),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .88),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: Colors.white),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 20,
+          offset: const Offset(0, 10),
+          color: const Color(0xff6DAEDB).withValues(alpha: .13),
         ),
+      ],
+    ),
+    child: Column(
+      children: [
+        TextField(
+          controller: search,
+          onChanged: (_) => onChanged(),
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(Icons.search_rounded, color: accent),
+            filled: true,
+            fillColor: const Color(0xffF9FBFF),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(22),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 44,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: chips.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 8),
+            itemBuilder: (context, i) {
+              final chip = chips[i];
+              final active = chip == selected;
+              return GestureDetector(
+                onTap: () => onChip(chip),
+                child: AnimatedContainer(
+                  duration: 220.ms,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: active ? accent : Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: active ? accent : const Color(0xffE7ECFF),
+                    ),
+                    boxShadow: active
+                        ? [
+                            BoxShadow(
+                              blurRadius: 16,
+                              color: accent.withValues(alpha: .24),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    chip,
+                    style: TextStyle(
+                      color: active ? Colors.white : const Color(0xff4C5875),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PremiumLearningCard extends StatelessWidget {
+  const _PremiumLearningCard({
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.caption,
+    required this.imageUrl,
+    required this.badge,
+    required this.kind,
+    required this.onAudio,
+    required this.onMic,
+    required this.listening,
+    this.favorite = false,
+    this.onFavorite,
+  });
+
+  final Color color;
+  final String title;
+  final String subtitle;
+  final String caption;
+  final String imageUrl;
+  final String badge;
+  final _PremiumCardKind kind;
+  final VoidCallback onAudio;
+  final VoidCallback onMic;
+  final bool listening;
+  final bool favorite;
+  final VoidCallback? onFavorite;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: onAudio,
+      borderRadius: BorderRadius.circular(28),
+      child: Ink(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white, width: 2.2),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 22,
+              offset: const Offset(0, 12),
+              color: color.withValues(alpha: .55),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 7,
+              top: 7,
+              child: GestureDetector(
+                onTap: onFavorite,
+                child: Icon(
+                  kind == _PremiumCardKind.object
+                      ? (favorite
+                            ? Icons.star_rounded
+                            : Icons.star_border_rounded)
+                      : Icons.auto_awesome_rounded,
+                  color: const Color(0xffFFB927),
+                  size: 22,
+                ),
+              ),
+            ),
+            Column(
+              children: [
+                if (kind == _PremiumCardKind.letter ||
+                    kind == _PremiumCardKind.number)
+                  SizedBox(
+                    height: 62,
+                    child: FittedBox(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Color(0xff293464),
+                          fontSize: 64,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 6,
+                    ),
+                    child: AppImage(url: imageUrl, fit: BoxFit.contain),
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xff293464),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: const Color(0xff293464).withValues(alpha: .68),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 86),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .70),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badge,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xff59617E),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: onMic,
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: listening
+                              ? Colors.redAccent
+                              : const Color(0xff32C653),
+                          boxShadow: [
+                            BoxShadow(
+                              blurRadius: listening ? 20 : 12,
+                              color:
+                                  (listening
+                                          ? Colors.redAccent
+                                          : const Color(0xff32C653))
+                                      .withValues(alpha: .28),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          listening
+                              ? Icons.graphic_eq_rounded
+                              : Icons.mic_rounded,
+                          color: Colors.white,
+                          size: 19,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xff1498BD),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 12,
+                            color: const Color(
+                              0xff1498BD,
+                            ).withValues(alpha: .28),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.volume_up_rounded,
+                        color: Colors.white,
+                        size: 19,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  ).animate().fadeIn(duration: 250.ms).slideY(begin: .05);
+}
+
+class _VoiceProgressPanel extends StatelessWidget {
+  const _VoiceProgressPanel({
+    required this.heard,
+    required this.feedback,
+    required this.listening,
+    required this.accent,
+  });
+
+  final String heard;
+  final String feedback;
+  final bool listening;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => AnimatedContainer(
+    duration: 220.ms,
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .90),
+      borderRadius: BorderRadius.circular(26),
+      border: Border.all(
+        color: listening ? accent.withValues(alpha: .45) : Colors.white,
+        width: 2,
+      ),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: listening ? 26 : 18,
+          offset: const Offset(0, 10),
+          color: accent.withValues(alpha: listening ? .22 : .10),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: listening ? Colors.redAccent : accent,
+          ),
+          child: Icon(
+            listening
+                ? Icons.graphic_eq_rounded
+                : Icons.record_voice_over_rounded,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                title,
-                textAlign: TextAlign.center,
-                style: sectionTitle(context).copyWith(color: color),
+                feedback,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xff293464),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              FilledButton.icon(
-                onPressed: onSeru,
-                icon: const Icon(Icons.emoji_events, size: 16),
-                label: const Text('Mode Seru'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: color,
-                  foregroundColor: Colors.white,
-                  visualDensity: VisualDensity.compact,
+              const SizedBox(height: 4),
+              Text(
+                heard.isEmpty
+                    ? 'Kalimat terdengar akan muncul di sini.'
+                    : 'Terdengar: "$heard"',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xff66708F),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ],
           ),
         ),
-        IconButton.filledTonal(
-          onPressed: onNext,
-          icon: const Icon(Icons.chevron_right, size: 32),
-        ),
       ],
-    );
-  }
+    ),
+  );
 }
 
-class TactilePanel extends ConsumerWidget {
-  const TactilePanel({required this.child, this.width, this.height, super.key});
-  final Widget child;
-  final double? width;
-  final double? height;
+class _PremiumPagination extends StatelessWidget {
+  const _PremiumPagination({
+    required this.page,
+    required this.pages,
+    required this.accent,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  final int page;
+  final int pages;
+  final Color accent;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(appStateProvider).theme;
-    return Container(
-      width: width,
-      height: height,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: t.widgetBg,
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(color: t.widgetBorder, width: 3.5),
-        boxShadow: [
-          BoxShadow(
-            offset: const Offset(0, 10),
-            blurRadius: 0,
-            color: t.widgetBorder.withValues(alpha: .30),
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.center,
+    children: [
+      _PremiumRoundButton(
+        icon: Icons.chevron_left_rounded,
+        onTap: onPrev,
+        color: accent,
+      ),
+      const SizedBox(width: 12),
+      ...List.generate(
+        pages,
+        (i) => AnimatedContainer(
+          duration: 220.ms,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: i == page ? 24 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: i == page ? accent : Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: accent.withValues(alpha: .30)),
           ),
-          BoxShadow(
-            blurRadius: 20,
-            offset: const Offset(0, 12),
-            color: Colors.black.withValues(alpha: t.dark ? .2 : .06),
+        ),
+      ),
+      const SizedBox(width: 12),
+      _PremiumRoundButton(
+        icon: Icons.chevron_right_rounded,
+        onTap: onNext,
+        color: accent,
+      ),
+    ],
+  );
+}
+
+class _LearningMotivationPanel extends StatelessWidget {
+  const _LearningMotivationPanel({required this.accent});
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .90),
+      borderRadius: BorderRadius.circular(30),
+      border: Border.all(color: Colors.white, width: 2),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 22,
+          offset: const Offset(0, 12),
+          color: accent.withValues(alpha: .13),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Image.asset(
+              'assets/images/Anak_hebat.png',
+              width: 76,
+              height: 76,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Belajar jadi mudah!',
+                    style: TextStyle(
+                      color: Color(0xff293464),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    'Dengarkan suara, lihat gambar, dan ingat materinya!',
+                    style: TextStyle(
+                      color: Color(0xff66708F),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _LearningMiniFeature(
+              Icons.volume_up_rounded,
+              'Dengar Suara',
+              accent,
+            ),
+            const SizedBox(width: 8),
+            _LearningMiniFeature(
+              Icons.image_rounded,
+              'Lihat Gambar',
+              const Color(0xffFF8F1F),
+            ),
+            const SizedBox(width: 8),
+            _LearningMiniFeature(
+              Icons.psychology_rounded,
+              'Ingat & Pahami',
+              const Color(0xff32C653),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _LearningMiniFeature extends StatelessWidget {
+  const _LearningMiniFeature(this.icon, this.text, this.color);
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 5),
+          Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xff4B5574),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
-      child: child,
-    );
-  }
+    ),
+  );
 }
 
-class MenuButton extends ConsumerWidget {
-  const MenuButton({
-    required this.img,
-    required this.label,
-    required this.color,
+class _PremiumRoundButton extends StatelessWidget {
+  const _PremiumRoundButton({
+    required this.icon,
     required this.onTap,
-    super.key,
+    required this.color,
+    this.label,
   });
-  final String img;
-  final String label;
-  final Color color;
+
+  final IconData icon;
   final VoidCallback onTap;
+  final Color color;
+  final String? label;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(appStateProvider).theme;
-    return GestureDetector(
+  Widget build(BuildContext context) => Material(
+    color: Colors.white.withValues(alpha: .92),
+    borderRadius: BorderRadius.circular(22),
+    child: InkWell(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: t.widgetBg,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: color.withValues(alpha: .3), width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              offset: const Offset(0, 7),
-              blurRadius: 0,
-              color: color.withValues(alpha: .18),
-            ),
-            BoxShadow(
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-              color: Colors.black.withValues(alpha: t.dark ? .15 : .04),
-            ),
-          ],
-        ),
+      borderRadius: BorderRadius.circular(22),
+      child: SizedBox(
+        width: label == null ? 48 : 58,
+        height: 48,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: t.dark
-                      ? color.withValues(alpha: .12)
-                      : color.withValues(alpha: .08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: .15)),
+            Icon(icon, color: color, size: label == null ? 31 : 22),
+            if (label != null)
+              Text(
+                label!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
                 ),
-                child: Image.asset(img, fit: BoxFit.contain),
+              ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _PremiumPoints extends StatelessWidget {
+  const _PremiumPoints({required this.stars});
+  final int stars;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 48,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .92),
+      borderRadius: BorderRadius.circular(22),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star_rounded, color: Color(0xffFFC928), size: 25),
+        const SizedBox(width: 5),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$stars',
+              style: const TextStyle(
+                color: Color(0xff293464),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              label.toUpperCase(),
-              textAlign: TextAlign.center,
+            const Text(
+              'Poin',
               style: TextStyle(
-                fontSize: 16,
+                color: Color(0xff6F7692),
+                fontSize: 8,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: t.dark ? Colors.white : Colors.grey.shade800,
               ),
             ),
           ],
         ),
-      ).animate().fadeIn().slideY(begin: .12),
-    );
-  }
+      ],
+    ),
+  );
 }
+
+class _PremiumEmptyState extends StatelessWidget {
+  const _PremiumEmptyState({required this.accent});
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(22),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .88),
+      borderRadius: BorderRadius.circular(28),
+    ),
+    child: Text(
+      'Belum ada hasil yang cocok.',
+      textAlign: TextAlign.center,
+      style: TextStyle(color: accent, fontWeight: FontWeight.w900),
+    ),
+  );
+}
+
+String _objectFamily(LearningObject item) {
+  final c = item.category.toLowerCase();
+  if (c.contains('kendaraan')) return 'Transportasi';
+  if (c.contains('sekolah')) return 'Sekolah';
+  if (c.contains('buah') || c.contains('hewan') || c.contains('alam')) {
+    return 'Alam';
+  }
+  return 'Rumah';
+}
+
+String _englishName(String value) {
+  const names = {
+    'Apel': 'apple',
+    'Bola': 'ball',
+    'Cicak': 'lizard',
+    'Domba': 'sheep',
+    'Elang': 'eagle',
+    'Gajah': 'elephant',
+    'Harimau': 'tiger',
+    'Ikan': 'fish',
+    'Jeruk': 'orange',
+    'Kucing': 'cat',
+    'Mobil': 'car',
+    'Rumah': 'house',
+    'Sepeda': 'bicycle',
+    'Meja': 'table',
+    'Kursi': 'chair',
+    'Buku': 'book',
+    'Pensil': 'pencil',
+    'Tas': 'school bag',
+    'Lampu': 'lamp',
+    'Nanas': 'pineapple',
+    'Pisang': 'banana',
+    'Quran': 'quran',
+    'Tomat': 'tomato',
+    'Ular': 'snake',
+    'Wortel': 'carrot',
+    'Zebra': 'zebra',
+  };
+  return names[value] ?? value.toLowerCase();
+}
+
+String _numberBadge(String number) {
+  final n = int.tryParse(number) ?? 0;
+  return n.isEven ? 'genap' : 'ganjil';
+}
+
+bool _voiceMatches(String heard, String expected) {
+  final cleanHeard = _cleanVoiceText(heard);
+  final cleanExpected = _cleanVoiceText(expected);
+  if (cleanHeard.isEmpty || cleanExpected.isEmpty) return false;
+  return cleanHeard.contains(cleanExpected) ||
+      cleanExpected
+          .split(' ')
+          .any((word) => word.length > 2 && cleanHeard.contains(word));
+}
+
+String _cleanVoiceText(String value) => value
+    .toLowerCase()
+    .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+    .replaceAll(RegExp(r'\s+'), ' ')
+    .trim();
 
 class IqraLesson extends ConsumerStatefulWidget {
   const IqraLesson({
