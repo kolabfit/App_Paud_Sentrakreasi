@@ -57,8 +57,6 @@ class AccountScreen extends ConsumerWidget {
               const _BadgeShowcase(),
             ],
             const SizedBox(height: 16),
-            _ThemePickerPanel(app: app),
-            const SizedBox(height: 16),
             _LogoutCard(onTap: () => ref.read(appStateProvider).logout()),
           ],
         ),
@@ -475,24 +473,6 @@ class _SettingsSection extends StatelessWidget {
         itemCount: settings.length,
         itemBuilder: (_, i) => _SettingsTile(data: settings[i]),
       ),
-    );
-  }
-}
-
-class _ThemePickerPanel extends StatelessWidget {
-  const _ThemePickerPanel({required this.app});
-  final AppState app;
-
-  @override
-  Widget build(BuildContext context) {
-    return _AccountSectionCard(
-      title: 'Tema Aplikasi',
-      trailing: _AccountPill(
-        icon: Icons.palette_rounded,
-        label: app.theme.name,
-        color: app.theme.primary,
-      ),
-      child: ThemeWheel(app: app),
     );
   }
 }

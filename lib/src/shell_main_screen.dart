@@ -20,7 +20,9 @@ class ShellScreen extends ConsumerWidget {
       };
     }
     return Scaffold(
+      backgroundColor: Colors.transparent,
       extendBody: true,
+      extendBodyBehindAppBar: true,
       body: ThemedBackground(
         child: SafeArea(
           child: AnimatedSwitcher(
@@ -909,7 +911,7 @@ class _ModeFunCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ActionIllustrationCard(
       title: 'Mode Seru',
-      subtitle: 'Belajar dengan lebih menantang',
+      subtitle: 'Belajar dengan lebih',
       asset: 'assets/images/Mic.png',
       icon: Icons.mic_rounded,
       colors: const [Color(0xffFFF5C9), Color(0xffFFE1E8)],

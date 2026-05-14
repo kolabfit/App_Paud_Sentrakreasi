@@ -27,7 +27,8 @@ class _BelajarScreenState extends ConsumerState<BelajarScreen> {
   @override
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
-    return PagePad(child: modeBody(app));
+    final body = modeBody(app);
+    return app.learnMode == LearnMode.menu ? body : PagePad(child: body);
   }
 
   Widget modeBody(AppState app) {
@@ -49,71 +50,486 @@ class LearnMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final t = ref.watch(appStateProvider).theme;
-    final cross = MediaQuery.sizeOf(context).width >= 760 ? 4 : 2;
-    return Column(
+    final app = ref.watch(appStateProvider);
+    final size = MediaQuery.sizeOf(context);
+    final tablet = size.width >= 700;
+    final mascot = app.gender == Gender.girl
+        ? 'assets/images/Anak_Perempuan_Menu.png'
+        : 'assets/images/Anak_LakiLaki_Menu.png';
+    final cards = [
+      _AdventureData(
+        'MEMBACA',
+        'A sampai Z',
+        'assets/images/Logo_membaca.png',
+        const Color(0xffFFE2ED),
+        const Color(0xffF65391),
+        LearnMode.huruf,
+      ),
+      _AdventureData(
+        'ANGKA',
+        '1 sampai 1s0',
+        'assets/images/Logo_123.png',
+        const Color(0xffDDF4FF),
+        const Color(0xff279AF3),
+        LearnMode.angka,
+      ),
+      _AdventureData(
+        'BENDA',
+        'Mengenal berbagai benda di sekitar kita',
+        'assets/images/Logo_Benda.png',
+        const Color(0xffE3F8D8),
+        const Color(0xff32C653),
+        LearnMode.benda,
+      ),
+      _AdventureData(
+        'IQRA',
+        'Belajar membaca Huruf Hijaiyah',
+        'assets/images/Logo_iqra.png',
+        const Color(0xffEBDDFF),
+        const Color(0xff9656F4),
+        LearnMode.iqra,
+      ),
+    ];
+
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        Text(
-          'Pusat Petualangan',
-          textAlign: TextAlign.center,
-          style: sectionTitle(context).copyWith(
-            fontSize: MediaQuery.sizeOf(context).width >= 760 ? 48 : 36,
-            color: t.dark
-                ? t.secondary
-                : Theme.of(context).colorScheme.secondary,
-          ),
+        Image.asset(
+          'assets/images/Background_image.png',
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
         ),
-        const SizedBox(height: 10),
-        Container(
-          width: 128,
-          height: 8,
+        DecoratedBox(
           decoration: BoxDecoration(
-            color: t.secondary.withValues(alpha: .25),
-            borderRadius: BorderRadius.circular(999),
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withValues(alpha: .02),
+                const Color(0xffEAF8FF).withValues(alpha: .58),
+                Colors.white.withValues(alpha: .82),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
         ),
-        const SizedBox(height: 28),
-        Expanded(
-          child: GridView.count(
-            crossAxisCount: cross,
-            mainAxisSpacing: 20,
-            crossAxisSpacing: 20,
+        ...List.generate(18, (i) {
+          final left = (i * 67 % max(1, size.width.toInt())).toDouble();
+          final top = 42.0 + (i * 53 % 520);
+          return Positioned(
+            left: left,
+            top: top,
+            child:
+                Icon(
+                      i.isEven
+                          ? Icons.star_rounded
+                          : Icons.auto_awesome_rounded,
+                      color: Colors.white.withValues(alpha: .86),
+                      size: i.isEven ? 18 : 13,
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .scale(
+                      begin: const Offset(.72, .72),
+                      end: const Offset(1.12, 1.12),
+                      duration: (900 + i * 70).ms,
+                    ),
+          );
+        }),
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: tablet ? 980 : 560),
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(
+                  tablet ? 28 : 18,
+                  18,
+                  tablet ? 28 : 18,
+                  126,
+                ),
+                children: [
+                  _AdventureTopBar(
+                    stars: app.stars,
+                    onBack: () => ref.read(appStateProvider).go(TabItem.main),
+                  ),
+                  SizedBox(height: tablet ? 10 : 18),
+                  _AdventureHero(mascot: mascot, tablet: tablet),
+                  SizedBox(height: tablet ? 24 : 20),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: tablet ? 4 : 2,
+                      mainAxisSpacing: tablet ? 18 : 14,
+                      crossAxisSpacing: tablet ? 18 : 14,
+                      childAspectRatio: tablet ? .84 : .77,
+                    ),
+                    itemCount: cards.length,
+                    itemBuilder: (context, i) => _AdventureCard(
+                      data: cards[i],
+                      delay: i * 90,
+                      onTap: () =>
+                          ref.read(appStateProvider).openLearn(cards[i].mode),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _AdventureMotivation(mascot: mascot),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdventureTopBar extends StatelessWidget {
+  const _AdventureTopBar({required this.stars, required this.onBack});
+  final int stars;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _AdventureGlassButton(icon: Icons.chevron_left_rounded, onTap: onBack),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .93),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 18,
+                offset: const Offset(0, 9),
+                color: const Color(0xff4EA7DB).withValues(alpha: .18),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              MenuButton(
-                img: 'assets/images/Logo_membaca.png',
-                label: 'Membaca',
-                color: Colors.redAccent,
-                onTap: () =>
-                    ref.read(appStateProvider).openLearn(LearnMode.huruf),
+              const Icon(
+                Icons.star_rounded,
+                color: Color(0xffFFC928),
+                size: 30,
               ),
-              MenuButton(
-                img: 'assets/images/Logo_123.png',
-                label: 'Angka',
-                color: Colors.blueAccent,
-                onTap: () =>
-                    ref.read(appStateProvider).openLearn(LearnMode.angka),
-              ),
-              MenuButton(
-                img: 'assets/images/Logo_Benda.png',
-                label: 'Benda',
-                color: Colors.green,
-                onTap: () =>
-                    ref.read(appStateProvider).openLearn(LearnMode.benda),
-              ),
-              MenuButton(
-                img: 'assets/images/Logo_iqra.png',
-                label: 'Iqra',
-                color: Colors.purple,
-                onTap: () =>
-                    ref.read(appStateProvider).openLearn(LearnMode.iqra),
+              const SizedBox(width: 7),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$stars',
+                    style: const TextStyle(
+                      color: Color(0xff3B3D86),
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const Text(
+                    'Poin Kamu',
+                    style: TextStyle(
+                      color: Color(0xff5A6090),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 110),
       ],
     );
   }
+}
+
+class _AdventureHero extends StatelessWidget {
+  const _AdventureHero({required this.mascot, required this.tablet});
+  final String mascot;
+  final bool tablet;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: tablet ? 170 : 278,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.topCenter,
+        children: [
+          Positioned(
+            top: 0,
+            left: tablet ? 170 : 14,
+            right: tablet ? 170 : 14,
+            child:
+                Image.asset(
+                      'assets/images/Pusat_petualangan.png',
+                      height: tablet ? 128 : 110,
+                      fit: BoxFit.contain,
+                    )
+                    .animate()
+                    .fadeIn(duration: 380.ms)
+                    .scale(begin: const Offset(.92, .92)),
+          ),
+          Positioned(
+            right: tablet ? 58 : 8,
+            bottom: -6,
+            child:
+                Image.asset(
+                      mascot,
+                      height: tablet ? 170 : 134,
+                      fit: BoxFit.contain,
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .moveY(begin: -5, end: 5, duration: 1700.ms),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdventureCard extends StatelessWidget {
+  const _AdventureCard({
+    required this.data,
+    required this.delay,
+    required this.onTap,
+  });
+  final _AdventureData data;
+  final int delay;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(34),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: data.bg,
+            borderRadius: BorderRadius.circular(34),
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 20,
+                offset: const Offset(0, 12),
+                color: data.color.withValues(alpha: .20),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(31),
+                          ),
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white.withValues(alpha: .25),
+                              data.bg.withValues(alpha: .15),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 12,
+                      top: 10,
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Colors.white.withValues(alpha: .84),
+                        size: 18,
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Image.asset(data.asset, fit: BoxFit.contain),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: .78),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(31),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: data.color,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            data.subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xff4D5179),
+                              fontSize: 12,
+                              height: 1.2,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: data.color,
+                            boxShadow: [
+                              BoxShadow(
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                                color: data.color.withValues(alpha: .32),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .scale(
+                          begin: const Offset(.95, .95),
+                          end: const Offset(1.07, 1.07),
+                          duration: 1200.ms,
+                        ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(delay: Duration(milliseconds: delay)).slideY(begin: .07);
+  }
+}
+
+class _AdventureMotivation extends StatelessWidget {
+  const _AdventureMotivation({required this.mascot});
+  final String mascot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+            color: const Color(0xff6AAFE6).withValues(alpha: .18),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Image.asset(mascot, width: 72, fit: BoxFit.contain),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xffF1EAFF),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: const Text(
+                'Terus belajar ya! Setiap langkah kecil membawamu jadi hebat!',
+                style: TextStyle(
+                  color: Color(0xff4A3B8F),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdventureGlassButton extends StatelessWidget {
+  const _AdventureGlassButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Material(
+          color: Colors.white.withValues(alpha: .88),
+          child: InkWell(
+            onTap: onTap,
+            child: SizedBox(
+              width: 58,
+              height: 58,
+              child: Icon(icon, color: const Color(0xff8B55F6), size: 34),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdventureData {
+  const _AdventureData(
+    this.title,
+    this.subtitle,
+    this.asset,
+    this.bg,
+    this.color,
+    this.mode,
+  );
+  final String title;
+  final String subtitle;
+  final String asset;
+  final Color bg;
+  final Color color;
+  final LearnMode mode;
 }
 
 class HurufScreen extends ConsumerStatefulWidget {
