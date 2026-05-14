@@ -80,7 +80,7 @@ class LearnMenu extends ConsumerWidget {
             crossAxisSpacing: 20,
             children: [
               MenuButton(
-                img: 'assets/images/Logo_Membaca.png',
+                img: 'assets/images/Logo_membaca.png',
                 label: 'Membaca',
                 color: Colors.redAccent,
                 onTap: () =>

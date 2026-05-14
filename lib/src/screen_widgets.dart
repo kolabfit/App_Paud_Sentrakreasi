@@ -535,7 +535,7 @@ class ProgressOverview extends StatelessWidget {
   }
 
   String _assetForCategory(String cat) => switch (cat) {
-    'membaca' => 'assets/images/Logo_Membaca.png',
+    'membaca' => 'assets/images/Logo_membaca.png',
     'angka' => 'assets/images/Logo_123.png',
     'benda' => 'assets/images/Logo_Benda.png',
     'iqra' => 'assets/images/Logo_iqra.png',

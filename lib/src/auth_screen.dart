@@ -27,13 +27,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         'Mode Seru dengan suara',
         'Ucapkan jawaban, dapatkan reward.',
         Icons.mic_rounded,
-        'assets/images/Logo_Membaca.png',
+        'assets/images/Logo_membaca.png',
       ),
       (
         'Lagu anak interaktif',
         'Bernyanyi, bergerak, dan tetap fokus.',
         Icons.music_note_rounded,
-        'assets/images/Logo_Lagu.png',
+        'assets/images/Bernyanyi.png',
       ),
       (
         'Tracking progress belajar',

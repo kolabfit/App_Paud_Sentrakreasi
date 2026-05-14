@@ -44,7 +44,7 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                     color: songColor.withValues(alpha: .12),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Image.asset('assets/images/Logo_Lagu.png'),
+                  child: Image.asset('assets/images/Bernyanyi.png'),
                 ),
                 const SizedBox(width: 14),
                 Expanded(

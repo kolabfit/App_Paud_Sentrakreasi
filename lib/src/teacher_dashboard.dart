@@ -83,7 +83,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                   ),
                   padding: const EdgeInsets.all(10),
                   child: Image.asset(
-                    'assets/images/Logo_Membaca.png',
+                    'assets/images/Logo_membaca.png',
                     fit: BoxFit.contain,
                   ),
                 ),
