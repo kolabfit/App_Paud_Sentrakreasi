@@ -55,41 +55,52 @@ class _FancyBottomNav extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIdx = TabItem.values.indexOf(app.tab);
-    return Container(
-      margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .96),
-        borderRadius: BorderRadius.circular(34),
-        border: Border.all(color: Colors.white.withValues(alpha: .76)),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-            color: const Color(0xff65A8D7).withValues(alpha: .22),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Row(
-          children: List.generate(4, (i) {
-            final icons = [
-              Icons.home_rounded,
-              Icons.menu_book_rounded,
-              Icons.music_note_rounded,
-              Icons.person_rounded,
-            ];
-            final labels = ['MAIN', 'BELAJAR', 'LAGU ANAK', 'AKUN'];
-            return Expanded(
-              child: _NavItem(
-                icon: icons[i],
-                label: labels[i],
-                isActive: selectedIdx == i,
-                theme: t,
-                onTap: () => ref.read(appStateProvider).go(TabItem.values[i]),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(34),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: .88),
+            borderRadius: BorderRadius.circular(34),
+            border: Border.all(color: Colors.white.withValues(alpha: .88)),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 34,
+                offset: const Offset(0, 16),
+                color: const Color(0xff8B55F6).withValues(alpha: .18),
               ),
-            );
-          }),
+              BoxShadow(
+                blurRadius: 28,
+                color: const Color(0xff53D5B5).withValues(alpha: .12),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: Row(
+              children: List.generate(4, (i) {
+                final icons = [
+                  Icons.home_rounded,
+                  Icons.menu_book_rounded,
+                  Icons.music_note_rounded,
+                  Icons.person_rounded,
+                ];
+                final labels = ['Main', 'Belajar', 'Lagu Anak', 'Akun'];
+                return Expanded(
+                  child: _NavItem(
+                    icon: icons[i],
+                    label: labels[i],
+                    isActive: selectedIdx == i,
+                    theme: t,
+                    onTap: () =>
+                        ref.read(appStateProvider).go(TabItem.values[i]),
+                  ),
+                );
+              }),
+            ),
+          ),
         ),
       ),
     );
@@ -118,12 +129,27 @@ class _NavItem extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
         decoration: BoxDecoration(
-          color: isActive
-              ? activeColor.withValues(alpha: .12)
-              : Colors.transparent,
+          gradient: isActive
+              ? LinearGradient(
+                  colors: [
+                    activeColor.withValues(alpha: .18),
+                    const Color(0xff68E2C2).withValues(alpha: .14),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           borderRadius: BorderRadius.circular(24),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    blurRadius: 18,
+                    color: activeColor.withValues(alpha: .22),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -131,13 +157,23 @@ class _NavItem extends StatelessWidget {
             AnimatedScale(
               scale: isActive ? 1.14 : 1,
               duration: const Duration(milliseconds: 220),
-              child: Icon(
-                icon,
-                size: 25,
-                color: isActive ? activeColor : const Color(0xff6F7495),
+              child: Container(
+                width: 34,
+                height: 30,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isActive
+                      ? Colors.white.withValues(alpha: .86)
+                      : Colors.transparent,
+                ),
+                child: Icon(
+                  icon,
+                  size: 24,
+                  color: isActive ? activeColor : const Color(0xff6F7495),
+                ),
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 3),
             Text(
               label,
               maxLines: 1,
@@ -146,6 +182,16 @@ class _NavItem extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
                 color: isActive ? activeColor : const Color(0xff59607F),
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.only(top: 4),
+              width: isActive ? 18 : 4,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isActive ? activeColor : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ],
@@ -814,19 +860,6 @@ class _HomeProgressPanel extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-              Text(
-                'Lihat Semua',
-                style: TextStyle(
-                  color: Color(0xff1890D2),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xff1890D2),
-                size: 20,
               ),
             ],
           ),

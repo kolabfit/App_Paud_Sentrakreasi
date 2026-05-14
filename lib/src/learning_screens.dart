@@ -28,7 +28,9 @@ class _BelajarScreenState extends ConsumerState<BelajarScreen> {
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
     final body = modeBody(app);
-    return app.learnMode == LearnMode.menu ? body : PagePad(child: body);
+    return app.learnMode == LearnMode.menu || app.learnMode == LearnMode.iqra
+        ? body
+        : PagePad(child: body);
   }
 
   Widget modeBody(AppState app) {
@@ -1044,6 +1046,7 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
   bool slow = false;
   bool listening = false;
   String feedback = '';
+  final Set<String> favoriteIqra = {};
 
   @override
   void initState() {
@@ -1073,156 +1076,83 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
       return IqraFunMode(onClose: () => setState(() => seru = false));
     }
     final app = ref.watch(appStateProvider);
-    final wide = MediaQuery.sizeOf(context).width >= 720;
-    return Column(
+    final progress = app.progress['iqra'] ?? 0;
+    return Stack(
       children: [
-        Row(
-          children: [
-            IconButton.filledTonal(
-              onPressed: () =>
-                  ref.read(appStateProvider).openLearn(LearnMode.menu),
-              icon: const Icon(Icons.chevron_left),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Iqra 1',
-                style: sectionTitle(
-                  context,
-                ).copyWith(color: const Color(0xff7B3FB3)),
-              ),
-            ),
-            RewardPill(stars: app.stars),
-            const SizedBox(width: 8),
-            const Text(
-              'Bantuan latin',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(width: 8),
-            Switch(
-              value: widget.readingHelp,
-              onChanged: (_) => widget.onToggle(),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              onPressed: () => setState(() => seru = true),
-              icon: const Icon(Icons.emoji_events, size: 16),
-              label: const Text('Mode Seru'),
-              style: FilledButton.styleFrom(backgroundColor: Colors.purple),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            value: (app.progress['iqra'] ?? 0) / 100,
-            minHeight: 12,
-            backgroundColor: const Color(0xffA7E8BD).withValues(alpha: .28),
-            color: const Color(0xff34A853),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            _IqraStat(
-              icon: Icons.done_all_rounded,
-              text: '${app.iqraMastered.length}/${iqraData.length} terbaca',
-            ),
-            const SizedBox(width: 8),
-            _IqraStat(
-              icon: Icons.local_fire_department_rounded,
-              text: '${app.iqraStreak} streak',
-            ),
-            const SizedBox(width: 8),
-            _IqraStat(
-              icon: Icons.workspace_premium_rounded,
-              text: '${(app.progress['iqra'] ?? 0) ~/ 20} badge',
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Expanded(
-          child: Stack(
+        const Positioned.fill(child: _IqraDreamScene()),
+        Positioned.fill(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 118),
             children: [
-              const Positioned.fill(child: _IqraParticles()),
-              PageView.builder(
-                controller: page,
-                itemCount: iqraData.length,
-                onPageChanged: (i) {
+              _IqraHeroSection(
+                app: app,
+                latinEnabled: widget.readingHelp,
+                slow: slow,
+                onBack: () =>
+                    ref.read(appStateProvider).openLearn(LearnMode.menu),
+                onGuide: widget.onToggle,
+                onSettings: () => setState(() => slow = !slow),
+              ),
+              const SizedBox(height: 14),
+              _IqraProgressCard(
+                progress: progress,
+                mastered: app.iqraMastered.length,
+                total: iqraData.length,
+                streak: app.iqraStreak,
+              ),
+              const SizedBox(height: 18),
+              _IqraCatalogSection(
+                selectedIndex: index,
+                latinEnabled: widget.readingHelp,
+                mastered: app.iqraMastered,
+                listening: listening,
+                feedback: feedback,
+                favorites: favoriteIqra,
+                onSelect: (i) {
                   setState(() {
                     index = i;
                     feedback = '';
                   });
                   playIqra(iqraData[i], autoplay: true);
                 },
-                itemBuilder: (_, i) => Center(
-                  child: _IqraCard(
-                    item: iqraData[i],
-                    showLatin: widget.readingHelp,
-                    mastered: app.iqraMastered.contains(iqraData[i].latin),
-                    slow: slow,
-                    listening: listening && i == index,
-                    wide: wide,
-                    feedback: i == index ? feedback : '',
-                    onTap: () => playIqra(iqraData[i]),
-                    onSlow: () => setState(() => slow = !slow),
-                    onMic: () => practiceIqra(iqraData[i]),
-                  ),
-                ),
+                onAudio: (i) async {
+                  setState(() {
+                    index = i;
+                    feedback = '';
+                  });
+                  await playIqra(iqraData[i]);
+                },
+                onPractice: (i) async {
+                  setState(() => index = i);
+                  await practiceIqra(iqraData[i]);
+                },
+                onFavorite: (item) {
+                  setState(() {
+                    favoriteIqra.contains(item.latin)
+                        ? favoriteIqra.remove(item.latin)
+                        : favoriteIqra.add(item.latin);
+                  });
+                },
               ),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton.filledTonal(
-                  onPressed: () => goPage(index - 1),
-                  icon: const Icon(Icons.chevron_left_rounded, size: 34),
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton.filledTonal(
-                  onPressed: () => goPage(index + 1),
-                  icon: const Icon(Icons.chevron_right_rounded, size: 34),
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: ConfettiWidget(
-                  confettiController: confetti,
-                  blastDirectionality: BlastDirectionality.explosive,
-                  shouldLoop: false,
-                ),
+              const SizedBox(height: 18),
+              _IqraModeSeruSection(onOpen: () => setState(() => seru = true)),
+              const SizedBox(height: 18),
+              _IqraRewardSection(
+                stars: app.stars,
+                mastered: app.iqraMastered.length,
+                total: iqraData.length,
               ),
             ],
           ),
         ),
-        SizedBox(
-          height: 76,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: iqraData.length,
-            separatorBuilder: (_, i) => const SizedBox(width: 8),
-            itemBuilder: (_, i) => ChoiceChip(
-              selected: i == index,
-              label: Text(
-                iqraData[i].char,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              avatar: app.iqraMastered.contains(iqraData[i].latin)
-                  ? const Icon(
-                      Icons.star_rounded,
-                      size: 18,
-                      color: Colors.amber,
-                    )
-                  : null,
-              onSelected: (_) => goPage(i),
-            ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: confetti,
+            blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
           ),
         ),
-        const SizedBox(height: 110),
       ],
     );
   }
@@ -1275,171 +1205,6 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
   }
 }
 
-class _IqraCard extends StatelessWidget {
-  const _IqraCard({
-    required this.item,
-    required this.showLatin,
-    required this.mastered,
-    required this.slow,
-    required this.listening,
-    required this.wide,
-    required this.feedback,
-    required this.onTap,
-    required this.onSlow,
-    required this.onMic,
-  });
-  final IqraItem item;
-  final bool showLatin;
-  final bool mastered;
-  final bool slow;
-  final bool listening;
-  final bool wide;
-  final String feedback;
-  final VoidCallback onTap;
-  final VoidCallback onSlow;
-  final VoidCallback onMic;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxWidth = wide ? 620.0 : 420.0;
-    return Container(
-      width: min(MediaQuery.sizeOf(context).width - 42, maxWidth),
-      padding: EdgeInsets.all(wide ? 28 : 20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xffFFF8D7), Color(0xffDDFBE8), Color(0xffF2E6FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(38),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: .75),
-          width: 3,
-        ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 28,
-            offset: const Offset(0, 16),
-            color: const Color(0xff7B3FB3).withValues(alpha: .18),
-          ),
-          BoxShadow(
-            blurRadius: 42,
-            color: const Color(0xff35C88A).withValues(alpha: .18),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Image.asset('assets/images/Logo_iqra.png', width: 62, height: 62)
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .moveY(begin: -4, end: 4, duration: 1500.ms),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  item.group,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xff196D53),
-                  ),
-                ),
-              ),
-              if (mastered)
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Colors.amber,
-                  size: 34,
-                ),
-            ],
-          ),
-          GestureDetector(
-            onTap: onTap,
-            child: AnimatedScale(
-              scale: listening ? 1.04 : 1,
-              duration: 260.ms,
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .68),
-                  borderRadius: BorderRadius.circular(34),
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 28,
-                      color: Colors.white.withValues(alpha: .65),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      item.char,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: wide ? 176 : 132,
-                        height: .95,
-                        fontWeight: FontWeight.w900,
-                        fontFamily: 'serif',
-                        color: const Color(0xff2E7D61),
-                      ),
-                    ).animate().scale(duration: 260.ms),
-                    if (showLatin)
-                      Text(
-                        item.latin,
-                        style: TextStyle(
-                          fontSize: wide ? 38 : 30,
-                          fontWeight: FontWeight.w900,
-                          color: const Color(0xff7B3FB3),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (feedback.isNotEmpty)
-            Text(
-              feedback,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight: FontWeight.w900,
-                color: Color(0xff196D53),
-              ),
-            ),
-          const SizedBox(height: 12),
-          AudioBars(
-            color: listening ? Colors.redAccent : const Color(0xff35C88A),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: onTap,
-                  icon: const Icon(Icons.volume_up_rounded),
-                  label: const Text('Audio'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              IconButton.filledTonal(
-                onPressed: onSlow,
-                icon: Icon(
-                  slow ? Icons.speed_rounded : Icons.slow_motion_video_rounded,
-                ),
-              ),
-              const SizedBox(width: 10),
-              _MicButton(listening: listening, onTap: onMic),
-            ],
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 240.ms).slideY(begin: .06);
-  }
-}
-
 class _MicButton extends StatelessWidget {
   const _MicButton({required this.listening, required this.onTap});
   final bool listening;
@@ -1481,37 +1246,6 @@ class _MicButton extends StatelessWidget {
   }
 }
 
-class _IqraStat extends StatelessWidget {
-  const _IqraStat({required this.icon, required this.text});
-  final IconData icon;
-  final String text;
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .45),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: .7)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: const Color(0xff2E7D61)),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
 class _IqraParticles extends StatelessWidget {
   const _IqraParticles();
   @override
@@ -1535,6 +1269,1190 @@ class _IqraParticles extends StatelessWidget {
       }),
     ),
   );
+}
+
+class _IqraDreamScene extends StatelessWidget {
+  const _IqraDreamScene();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          'assets/images/Backgroudn_Image_Iqra.png',
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withValues(alpha: .05),
+                const Color(0xffF2EAFF).withValues(alpha: .20),
+                Colors.white.withValues(alpha: .82),
+              ],
+              stops: const [0, .42, 1],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        const Positioned.fill(child: _IqraParticles()),
+        Positioned(
+          left: 34,
+          top: 76,
+          child:
+              Icon(
+                    Icons.nightlight_round,
+                    size: 46,
+                    color: const Color(0xffFFC857).withValues(alpha: .82),
+                    shadows: [
+                      Shadow(
+                        blurRadius: 24,
+                        color: const Color(0xffFFD978).withValues(alpha: .82),
+                      ),
+                    ],
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                    begin: const Offset(.96, .96),
+                    end: const Offset(1.08, 1.08),
+                    duration: 1800.ms,
+                  ),
+        ),
+        Positioned(
+          right: 34,
+          top: 96,
+          child:
+              Icon(
+                    Icons.tips_and_updates_rounded,
+                    size: 38,
+                    color: const Color(0xffFFD36A).withValues(alpha: .70),
+                  )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .moveY(begin: -5, end: 6, duration: 1500.ms),
+        ),
+      ],
+    );
+  }
+}
+
+class _IqraHeroSection extends StatelessWidget {
+  const _IqraHeroSection({
+    required this.app,
+    required this.latinEnabled,
+    required this.slow,
+    required this.onBack,
+    required this.onGuide,
+    required this.onSettings,
+  });
+
+  final AppState app;
+  final bool latinEnabled;
+  final bool slow;
+  final VoidCallback onBack;
+  final VoidCallback onGuide;
+  final VoidCallback onSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final tablet = width >= 720;
+    final mascot = app.gender == Gender.girl
+        ? 'assets/images/Anak_perempuan_Mengaji.png'
+        : 'assets/images/Anak_lakilaki_Mengaji.png';
+    return SizedBox(
+      height: tablet ? 266 : 278,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: Container(
+              padding: EdgeInsets.all(tablet ? 22 : 16),
+
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      _IqraCircleButton(
+                        icon: Icons.chevron_left_rounded,
+                        onTap: onBack,
+                      ),
+                      const Spacer(),
+                      _IqraPointsPill(stars: app.stars),
+                      const SizedBox(width: 8),
+                      _IqraCircleButton(
+                        icon: Icons.menu_book_rounded,
+                        active: latinEnabled,
+                        label: 'Panduan',
+                        onTap: onGuide,
+                      ),
+                      const SizedBox(width: 8),
+                      _IqraCircleButton(
+                        icon: slow
+                            ? Icons.slow_motion_video_rounded
+                            : Icons.settings_rounded,
+                        active: slow,
+                        label: 'Pelan',
+                        onTap: onSettings,
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: tablet ? width * .55 : width * .58,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'IQRA 1',
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: tablet ? 54 : 40,
+                              height: .95,
+                              color: const Color(0xff5B35C8),
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0,
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 18,
+                                  color: const Color(
+                                    0xffB688FF,
+                                  ).withValues(alpha: .42),
+                                ),
+                                const Shadow(
+                                  blurRadius: 0,
+                                  color: Colors.white,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 9,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: .84),
+                              borderRadius: BorderRadius.circular(999),
+                              border: Border.all(color: Colors.white),
+                            ),
+                            child: const Text(
+                              'Belajar membaca Huruf Hijaiyah ✨',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Color(0xff51467F),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            right: tablet ? 26 : 0,
+            bottom: -2,
+            child:
+                Image.asset(
+                      mascot,
+                      height: tablet ? 210 : 166,
+                      fit: BoxFit.contain,
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .moveY(begin: -5, end: 6, duration: 1700.ms),
+          ),
+          Positioned(
+            right: tablet ? 198 : 128,
+            bottom: tablet ? 34 : 46,
+            child:
+                Image.asset(
+                      'assets/images/Logo_iqra.png',
+                      width: tablet ? 84 : 64,
+                      height: tablet ? 84 : 64,
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .rotate(begin: -.015, end: .015, duration: 1500.ms),
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 340.ms).slideY(begin: .04);
+  }
+}
+
+class _IqraCircleButton extends StatelessWidget {
+  const _IqraCircleButton({
+    required this.icon,
+    required this.onTap,
+    this.active = false,
+    this.label,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool active;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(22),
+    child: BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+      child: Material(
+        color: active
+            ? const Color(0xff8B55F6).withValues(alpha: .92)
+            : Colors.white.withValues(alpha: .86),
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            width: label == null ? 48 : 56,
+            height: 48,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: active ? Colors.white : const Color(0xff7B55DA),
+                  size: label == null ? 31 : 22,
+                ),
+                if (label != null)
+                  Text(
+                    label!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: active ? Colors.white : const Color(0xff5B4B84),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _IqraPointsPill extends StatelessWidget {
+  const _IqraPointsPill({required this.stars});
+  final int stars;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 48,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .90),
+      borderRadius: BorderRadius.circular(22),
+      border: Border.all(color: Colors.white),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 18,
+          offset: const Offset(0, 8),
+          color: const Color(0xff8B55F6).withValues(alpha: .13),
+        ),
+      ],
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.star_rounded, color: Color(0xffFFC928), size: 25),
+        const SizedBox(width: 5),
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$stars',
+              style: const TextStyle(
+                color: Color(0xff393073),
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const Text(
+              'Poin',
+              style: TextStyle(
+                color: Color(0xff70699A),
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _IqraProgressCard extends StatelessWidget {
+  const _IqraProgressCard({
+    required this.progress,
+    required this.mastered,
+    required this.total,
+    required this.streak,
+  });
+
+  final int progress;
+  final int mastered;
+  final int total;
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final value = progress.clamp(0, 100) / 100;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .90),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+            color: const Color(0xff7C55FF).withValues(alpha: .14),
+          ),
+        ],
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 480;
+          final content = [
+            SizedBox(
+              width: 96,
+              height: 96,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 86,
+                    height: 86,
+                    child: CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 11,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: const Color(
+                        0xffEADFFF,
+                      ).withValues(alpha: .85),
+                      color: const Color(0xff8B55F6),
+                    ),
+                  ),
+                  Text(
+                    '$progress%',
+                    style: const TextStyle(
+                      color: Color(0xff6B3EE4),
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16, height: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Progress Kamu',
+                    style: TextStyle(
+                      color: Color(0xff30265F),
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$mastered / $total Huruf',
+                    style: const TextStyle(
+                      color: Color(0xff5C587E),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 10,
+                      value: value,
+                      backgroundColor: const Color(0xffD7F7EA),
+                      color: const Color(0xff42D59D),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16, height: 16),
+          ];
+          return compact
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(children: content.take(3).toList()),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(child: content.last),
+                        const SizedBox(width: 10),
+                        _IqraMiniStat(
+                          icon: Icons.local_fire_department_rounded,
+                          text: '$streak streak',
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+              : Row(children: content);
+        },
+      ),
+    ).animate().fadeIn(duration: 320.ms, delay: 60.ms).slideY(begin: .04);
+  }
+}
+
+class _IqraMiniStat extends StatelessWidget {
+  const _IqraMiniStat({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    decoration: BoxDecoration(
+      color: const Color(0xffFFF4CD),
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: const Color(0xffFF9F1C), size: 18),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Color(0xff704E18),
+            fontSize: 11,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _IqraCatalogSection extends StatelessWidget {
+  const _IqraCatalogSection({
+    required this.selectedIndex,
+    required this.latinEnabled,
+    required this.mastered,
+    required this.favorites,
+    required this.listening,
+    required this.feedback,
+    required this.onSelect,
+    required this.onAudio,
+    required this.onPractice,
+    required this.onFavorite,
+  });
+
+  final int selectedIndex;
+  final bool latinEnabled;
+  final Set<String> mastered;
+  final Set<String> favorites;
+  final bool listening;
+  final String feedback;
+  final ValueChanged<int> onSelect;
+  final ValueChanged<int> onAudio;
+  final ValueChanged<int> onPractice;
+  final ValueChanged<IqraItem> onFavorite;
+
+  @override
+  Widget build(BuildContext context) => _IqraSectionCard(
+    title: 'Katalog Huruf Hijaiyah Dasar',
+    subtitle: 'Klik huruf untuk belajar membaca dan mendengarkan',
+    icon: Icons.auto_stories_rounded,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final maxExtent = constraints.maxWidth >= 760 ? 166.0 : 142.0;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: iqraData.length,
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: maxExtent,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: constraints.maxWidth >= 760 ? .78 : .70,
+              ),
+              itemBuilder: (context, i) {
+                final item = iqraData[i];
+                return _IqraLetterCard(
+                  number: i + 1,
+                  item: item,
+                  selected: selectedIndex == i,
+                  latinEnabled: latinEnabled,
+                  mastered: mastered.contains(item.latin),
+                  favorite: favorites.contains(item.latin),
+                  listening: listening && selectedIndex == i,
+                  onTap: () => onSelect(i),
+                  onAudio: () => onAudio(i),
+                  onPractice: () => onPractice(i),
+                  onFavorite: () => onFavorite(item),
+                );
+              },
+            );
+          },
+        ),
+        if (feedback.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(13),
+            decoration: BoxDecoration(
+              color: const Color(0xffE9FFF5),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              feedback,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xff167653),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+class _IqraLetterCard extends StatelessWidget {
+  const _IqraLetterCard({
+    required this.number,
+    required this.item,
+    required this.selected,
+    required this.latinEnabled,
+    required this.mastered,
+    required this.favorite,
+    required this.listening,
+    required this.onTap,
+    required this.onAudio,
+    required this.onPractice,
+    required this.onFavorite,
+  });
+
+  final int number;
+  final IqraItem item;
+  final bool selected;
+  final bool latinEnabled;
+  final bool mastered;
+  final bool favorite;
+  final bool listening;
+  final VoidCallback onTap;
+  final VoidCallback onAudio;
+  final VoidCallback onPractice;
+  final VoidCallback onFavorite;
+
+  Color get statusColor {
+    if (mastered) return const Color(0xff38C985);
+    if (selected) return const Color(0xff39A8FF);
+    return const Color(0xff9EA5BC);
+  }
+
+  IconData get statusIcon {
+    if (mastered) return Icons.check_circle_rounded;
+    if (selected) return Icons.play_circle_fill_rounded;
+    return Icons.radio_button_unchecked_rounded;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = listening ? 1.04 : 1.0;
+    return AnimatedScale(
+      scale: scale,
+      duration: 220.ms,
+      curve: Curves.easeOutBack,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(26),
+          child: Ink(
+            padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .94),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: statusColor.withValues(alpha: selected ? .70 : .28),
+                width: selected ? 2.2 : 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: selected || listening ? 26 : 16,
+                  offset: const Offset(0, 10),
+                  color: statusColor.withValues(alpha: selected ? .24 : .12),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: statusColor.withValues(alpha: .14),
+                      ),
+                      child: Text(
+                        '$number',
+                        style: TextStyle(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(statusIcon, size: 18, color: statusColor),
+                    const SizedBox(width: 2),
+                    GestureDetector(
+                      onTap: onFavorite,
+                      child: Icon(
+                        favorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        size: 18,
+                        color: favorite
+                            ? const Color(0xffFF6FAE)
+                            : const Color(0xffB8BED2),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                Text(
+                  item.char,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontFamily: 'serif',
+                    fontSize: 58,
+                    height: .9,
+                    color: Color(0xff22264D),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  item.latin,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (latinEnabled)
+                  Text(
+                    item.latin.toLowerCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xff757C9D),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _IqraRoundAction(
+                      icon: Icons.volume_up_rounded,
+                      color: statusColor,
+                      onTap: onAudio,
+                    ),
+                    const SizedBox(width: 8),
+                    _IqraRoundAction(
+                      icon: listening
+                          ? Icons.graphic_eq_rounded
+                          : Icons.mic_rounded,
+                      color: listening
+                          ? Colors.redAccent
+                          : const Color(0xff8B55F6),
+                      onTap: onPractice,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 260.ms).slideY(begin: .05);
+  }
+}
+
+class _IqraRoundAction extends StatelessWidget {
+  const _IqraRoundAction({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: color,
+    shape: const CircleBorder(),
+    child: InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onTap,
+      child: SizedBox(
+        width: 34,
+        height: 34,
+        child: Icon(icon, color: Colors.white, size: 19),
+      ),
+    ),
+  );
+}
+
+class _IqraModeSeruSection extends StatelessWidget {
+  const _IqraModeSeruSection({required this.onOpen});
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final modes = [
+      _IqraModeData(
+        'Dengar & Ucap',
+        'Audio lalu ucap',
+        Icons.record_voice_over_rounded,
+        [const Color(0xffB58CFF), const Color(0xff6EC6FF)],
+      ),
+      _IqraModeData('Tebak Huruf', 'Dari suara', Icons.style_rounded, [
+        const Color(0xffFFD36A),
+        const Color(0xffFF8FB8),
+      ]),
+      _IqraModeData('Pilih Huruf', 'Cari yang benar', Icons.touch_app_rounded, [
+        const Color(0xff7FE5C3),
+        const Color(0xff58B7FF),
+      ]),
+      _IqraModeData('Susun Huruf', 'Drag & drop', Icons.extension_rounded, [
+        const Color(0xff9CEB74),
+        const Color(0xffFFE27A),
+      ]),
+      _IqraModeData('Kartu Flash', 'Flashcard audio', Icons.flip_rounded, [
+        const Color(0xffFF9BCF),
+        const Color(0xffB58CFF),
+      ]),
+    ];
+    return _IqraSectionCard(
+      title: 'Mode Seru',
+      subtitle: 'Belajar jadi lebih menyenangkan!',
+      icon: Icons.celebration_rounded,
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onOpen,
+            child: Container(
+              height: 158,
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(18, 16, 16, 14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                gradient: const LinearGradient(
+                  colors: [Color(0xff6B4DFF), Color(0xff39A8FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 26,
+                    offset: const Offset(0, 14),
+                    color: const Color(0xff6B4DFF).withValues(alpha: .24),
+                  ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    right: 12,
+                    bottom: -10,
+                    child: Image.asset(
+                      'assets/images/Anak_Anak_Bernyanyi.png',
+                      width: 150,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Positioned(
+                    right: 122,
+                    top: 8,
+                    child: Icon(
+                      Icons.music_note_rounded,
+                      color: Colors.white.withValues(alpha: .65),
+                      size: 26,
+                    ),
+                  ),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: SizedBox(
+                      width: 210,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mode Seru Iqra',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Latihan dengar, ucap, dan kumpulkan bintang.',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              height: 1.2,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 126,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: modes.length,
+              separatorBuilder: (_, i) => const SizedBox(width: 12),
+              itemBuilder: (context, i) =>
+                  _IqraMiniGameCard(data: modes[i], onTap: onOpen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IqraMiniGameCard extends StatelessWidget {
+  const _IqraMiniGameCard({required this.data, required this.onTap});
+  final _IqraModeData data;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: 152,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        gradient: LinearGradient(
+          colors: data.colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colors.white.withValues(alpha: .75)),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+            color: data.colors.last.withValues(alpha: .22),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(data.icon, color: Colors.white, size: 32),
+          const Spacer(),
+          Text(
+            data.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            data.subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: .86),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    ).animate().scale(duration: 180.ms),
+  );
+}
+
+class _IqraRewardSection extends StatelessWidget {
+  const _IqraRewardSection({
+    required this.stars,
+    required this.mastered,
+    required this.total,
+  });
+
+  final int stars;
+  final int mastered;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final rewards = [
+      _IqraRewardData(5, '⭐10'),
+      _IqraRewardData(10, '⭐25'),
+      _IqraRewardData(15, '⭐50'),
+      _IqraRewardData(20, 'Peti'),
+    ];
+    return _IqraSectionCard(
+      title: 'Yuk Kumpulkan Bintang!',
+      subtitle: '$stars bintang siap ditukar hadiah belajar',
+      icon: Icons.emoji_events_rounded,
+      child: Row(
+        children: [
+          Container(
+            width: 86,
+            height: 86,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xffFFE27A), Color(0xffFFB341)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 28,
+                  color: const Color(0xffFFB341).withValues(alpha: .32),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.emoji_events_rounded,
+              color: Colors.white,
+              size: 48,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              children: rewards
+                  .map(
+                    (reward) => _IqraRewardRow(
+                      reward: reward,
+                      done: mastered >= reward.target,
+                      progress: (mastered / reward.target).clamp(0, 1),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IqraRewardRow extends StatelessWidget {
+  const _IqraRewardRow({
+    required this.reward,
+    required this.done,
+    required this.progress,
+  });
+
+  final _IqraRewardData reward;
+  final bool done;
+  final num progress;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      children: [
+        Icon(
+          done ? Icons.check_circle_rounded : Icons.star_border_rounded,
+          color: done ? const Color(0xff38C985) : const Color(0xffFFB341),
+          size: 21,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              minHeight: 9,
+              value: progress.toDouble(),
+              backgroundColor: const Color(0xffF2ECFF),
+              color: done ? const Color(0xff38C985) : const Color(0xffFFB341),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 78,
+          child: Text(
+            '${reward.target} huruf → ${reward.label}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: Color(0xff5E5A7E),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _IqraSectionCard extends StatelessWidget {
+  const _IqraSectionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: .78),
+      borderRadius: BorderRadius.circular(30),
+      border: Border.all(color: Colors.white, width: 2),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 24,
+          offset: const Offset(0, 13),
+          color: const Color(0xff7AAED3).withValues(alpha: .13),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xffF0E7FF),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 18,
+                    color: const Color(0xff8B55F6).withValues(alpha: .18),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: const Color(0xff7B55DA), size: 24),
+            ),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xff30265F),
+                      fontSize: 18,
+                      height: 1.08,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xff777293),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        child,
+      ],
+    ),
+  ).animate().fadeIn(duration: 320.ms).slideY(begin: .04);
+}
+
+class _IqraModeData {
+  const _IqraModeData(this.title, this.subtitle, this.icon, this.colors);
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final List<Color> colors;
+}
+
+class _IqraRewardData {
+  const _IqraRewardData(this.target, this.label);
+  final int target;
+  final String label;
 }
 
 class IqraFunMode extends ConsumerStatefulWidget {
