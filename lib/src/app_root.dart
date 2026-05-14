@@ -16,7 +16,20 @@ class BelajarYukApp extends ConsumerWidget {
           seedColor: theme.primary,
           brightness: theme.dark ? Brightness.dark : Brightness.light,
         ),
-        fontFamily: 'Arial',
+        fontFamily: 'Baloo2',
+        textTheme:
+            ThemeData(
+                  brightness: theme.dark ? Brightness.dark : Brightness.light,
+                ).textTheme
+                .apply(fontFamily: 'Baloo2')
+                .copyWith(
+                  headlineLarge: const TextStyle(fontWeight: FontWeight.w900),
+                  headlineMedium: const TextStyle(fontWeight: FontWeight.w900),
+                  headlineSmall: const TextStyle(fontWeight: FontWeight.w900),
+                  titleLarge: const TextStyle(fontWeight: FontWeight.w900),
+                  titleMedium: const TextStyle(fontWeight: FontWeight.w900),
+                  titleSmall: const TextStyle(fontWeight: FontWeight.w900),
+                ),
         scaffoldBackgroundColor: theme.bg,
         // Globally rounded chips & buttons
         chipTheme: ChipThemeData(

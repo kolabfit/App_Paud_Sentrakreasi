@@ -67,7 +67,7 @@ class LearnMenu extends ConsumerWidget {
       ),
       _AdventureData(
         'ANGKA',
-        '1 sampai 1s0',
+        '1 sampai 10',
         'assets/images/Logo_123.png',
         const Color(0xffDDF4FF),
         const Color(0xff279AF3),
@@ -83,7 +83,7 @@ class LearnMenu extends ConsumerWidget {
       ),
       _AdventureData(
         'IQRA',
-        'Belajar membaca Huruf Hijaiyah',
+        'Hijaiyah dasar',
         'assets/images/Logo_iqra.png',
         const Color(0xffEBDDFF),
         const Color(0xff9656F4),

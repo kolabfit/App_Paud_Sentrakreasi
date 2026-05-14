@@ -20,9 +20,7 @@ class ShellScreen extends ConsumerWidget {
       };
     }
     return Scaffold(
-      backgroundColor: Colors.transparent,
       extendBody: true,
-      extendBodyBehindAppBar: true,
       body: ThemedBackground(
         child: SafeArea(
           child: AnimatedSwitcher(
@@ -1015,110 +1013,133 @@ class _ActionIllustrationCard extends StatelessWidget {
     final whiteButton = buttonColor == Colors.white;
     return GestureDetector(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 16, right: 10),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              constraints: const BoxConstraints(minHeight: 118),
-              padding: EdgeInsets.fromLTRB(18, 16, contentRightPadding, 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                gradient: LinearGradient(
-                  colors: colors,
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(color: Colors.white, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                    color: colors.last.withValues(alpha: .22),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: titleColor,
-                      fontSize: 19,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                      height: 1.25,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: buttonColor,
-                      borderRadius: BorderRadius.circular(999),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                          color: Colors.black.withValues(alpha: .10),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final mobile = constraints.maxWidth < 520;
+          final reserve = mobile
+              ? min(contentRightPadding, constraints.maxWidth * .42)
+              : contentRightPadding;
+          final nextImageWidth =
+              (mobile
+                      ? min(imageWidth, constraints.maxWidth * .36)
+                      : imageWidth)
+                  .toDouble();
+          final nextImageHeight = (mobile ? min(imageHeight, 118) : imageHeight)
+              .toDouble();
+          return Padding(
+                padding: EdgeInsets.only(top: 16, right: mobile ? 0 : 10),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 126),
+                      padding: EdgeInsets.fromLTRB(18, 16, reserve + 8, 14),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        gradient: LinearGradient(
+                          colors: colors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          icon,
-                          color: whiteButton ? buttonIconColor : Colors.white,
-                          size: 15,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          buttonText,
-                          style: TextStyle(
-                            color: whiteButton ? buttonIconColor : Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                            color: colors.last.withValues(alpha: .22),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: titleColor,
+                              fontSize: mobile ? 20 : 19,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Text(
+                            subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: mobile ? 14 : 13,
+                              fontWeight: FontWeight.w900,
+                              height: 1.25,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: buttonColor,
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: [
+                                BoxShadow(
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                  color: Colors.black.withValues(alpha: .10),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  icon,
+                                  color: whiteButton
+                                      ? buttonIconColor
+                                      : Colors.white,
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  buttonText,
+                                  style: TextStyle(
+                                    color: whiteButton
+                                        ? buttonIconColor
+                                        : Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            Positioned(
-              right: imageRight,
-              top: -18,
-              bottom: -10,
-              child: Image.asset(
-                asset,
-                height: imageHeight,
-                width: imageWidth,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 330.ms, delay: 300.ms).slideY(begin: .06),
+                    Positioned(
+                      right: mobile ? max(imageRight, -14) : imageRight,
+                      top: -14,
+                      bottom: -8,
+                      child: Image.asset(
+                        asset,
+                        height: nextImageHeight,
+                        width: nextImageWidth,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 330.ms, delay: 300.ms)
+              .slideY(begin: .06);
+        },
+      ),
     );
   }
 }
