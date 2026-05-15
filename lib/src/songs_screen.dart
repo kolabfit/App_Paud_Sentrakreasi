@@ -184,33 +184,12 @@ class _SongsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = _themeOf(context);
     final tablet = MediaQuery.sizeOf(context).width >= 760;
     return SizedBox(
       height: tablet ? 286 : 258,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(36),
-              child: t.night
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        DecoratedBox(
-                          decoration: nightGlassDecoration(
-                            borderColor: NightPalette.lavender,
-                            radius: 36,
-                            opacity: .46,
-                          ),
-                        ),
-                        const NightSparkles(count: 12, gold: true),
-                      ],
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ),
           Positioned(
             left: 18,
             top: 16,

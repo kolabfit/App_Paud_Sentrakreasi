@@ -1290,40 +1290,6 @@ class _PremiumLearningHero extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(32),
-                gradient: LinearGradient(
-                  colors: t.night
-                      ? [
-                          NightPalette.surface.withValues(alpha: .68),
-                          accent.withValues(alpha: .20),
-                          NightPalette.purple.withValues(alpha: .56),
-                        ]
-                      : [
-                          Colors.white.withValues(alpha: .50),
-                          accent.withValues(alpha: .15),
-                        ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: t.night
-                      ? NightPalette.cyan.withValues(alpha: .30)
-                      : Colors.white,
-                  width: 2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 30,
-                    offset: const Offset(0, 16),
-                    color: accent.withValues(alpha: t.night ? .32 : .18),
-                  ),
-                ],
-              ),
-            ),
-          ),
           Positioned(
             left: 12,
             right: 12,
@@ -2667,9 +2633,9 @@ class _IqraHeroSection extends StatelessWidget {
                               vertical: 9,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: .84),
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(999),
-                              border: Border.all(color: Colors.white),
+                              border: Border.all(color: Colors.transparent),
                             ),
                             child: const Text(
                               'Belajar membaca Huruf Hijaiyah ✨',

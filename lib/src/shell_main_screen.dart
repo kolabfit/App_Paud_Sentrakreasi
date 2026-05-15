@@ -336,36 +336,6 @@ class _HomeHero extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(34),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (dark)
-                    Image.asset(
-                      'assets/images/Background_Image_Malam.png',
-                      fit: BoxFit.cover,
-                      alignment: Alignment.topCenter,
-                    ),
-                  AnimatedContainer(
-                    duration: 420.ms,
-                    decoration: dark
-                        ? nightGlassDecoration(
-                            borderColor: NightPalette.lavender,
-                            radius: 34,
-                            opacity: .50,
-                          )
-                        : BoxDecoration(
-                            borderRadius: BorderRadius.circular(34),
-                            color: Colors.white.withValues(alpha: .08),
-                          ),
-                  ),
-                  if (dark) const NightSparkles(count: 14, gold: true),
-                ],
-              ),
-            ),
-          ),
           Positioned(
             left: 16,
             top: 16,

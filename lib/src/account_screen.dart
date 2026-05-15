@@ -38,9 +38,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
             _PremiumProfileCard(app: app),
             const SizedBox(height: 16),
             _LearningStats(app: app),
-            const SizedBox(height: 16),
-            _PremiumBanner(onTap: () => Feedback.forTap(context)),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
             if (app.role == Role.teacher) ...[
               _TeacherDashboardCard(
                 onTap: () => ref.read(appStateProvider).go(TabItem.akun),
@@ -107,6 +105,7 @@ class _AccountHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return SizedBox(
       height: 138,
       child: Stack(
@@ -118,7 +117,7 @@ class _AccountHero extends StatelessWidget {
               child: Stack(fit: StackFit.expand),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 20,
             top: 22,
             right: 112,
@@ -131,30 +130,36 @@ class _AccountHero extends StatelessWidget {
                     fontSize: 34,
                     height: 1,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xff38258A),
+                    color: t.night ? Colors.white : const Color(0xff38258A),
                     shadows: [
                       Shadow(
                         blurRadius: 10,
-                        color: Colors.white,
-                        offset: Offset(0, 2),
+                        color: t.night
+                            ? Colors.black.withValues(alpha: .5)
+                            : Colors.white,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Kelola profil dan pengaturan akunmu ✨',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Color(0xff58607E),
+                    color: t.night
+                        ? const Color(0xffB8C0D8)
+                        : const Color(0xff58607E),
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     shadows: [
                       Shadow(
                         blurRadius: 8,
-                        color: Colors.white,
-                        offset: Offset(0, 2),
+                        color: t.night
+                            ? Colors.black.withValues(alpha: .3)
+                            : Colors.white,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
@@ -220,6 +225,7 @@ class _PremiumProfileCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(tablet ? 24 : 18),
       decoration: _accountCardDecoration(
+        context,
         shadow: const Color(0xff855CFF),
         radius: 34,
       ),
@@ -553,13 +559,17 @@ class _ThemeSettingsPage extends ConsumerWidget {
                       borderColor: current.primary,
                       radius: 30,
                     )
-                  : _accountCardDecoration(shadow: current.primary, radius: 30),
+                  : _accountCardDecoration(
+                      context,
+                      shadow: current.primary,
+                      radius: 30,
+                    ),
               child: Row(
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: Image.asset(
-                      current.asset,
+                      current.backgroundAsset ?? current.asset,
                       width: 72,
                       height: 72,
                       fit: BoxFit.cover,
@@ -683,7 +693,10 @@ class _SimpleThemeCard extends StatelessWidget {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(theme.asset, fit: BoxFit.cover),
+                      Image.asset(
+                        theme.backgroundAsset ?? theme.asset,
+                        fit: BoxFit.cover,
+                      ),
                       if (picked)
                         Align(
                           alignment: Alignment.topRight,
@@ -723,6 +736,7 @@ class _SimpleThemeCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _PremiumBanner extends StatelessWidget {
   const _PremiumBanner({required this.onTap});
   final VoidCallback onTap;
@@ -1134,9 +1148,10 @@ class _AccountSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: _accountCardDecoration(),
+      decoration: _accountCardDecoration(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1145,8 +1160,10 @@ class _AccountSectionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xff303163),
+                  style: TextStyle(
+                    color: t.night
+                        ? NightPalette.text
+                        : const Color(0xff303163),
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1170,6 +1187,7 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return _AccountTapCard(
       onTap: onTap,
       compact: true,
@@ -1186,8 +1204,10 @@ class _SettingsTile extends StatelessWidget {
                   data.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff343864),
+                  style: TextStyle(
+                    color: t.night
+                        ? NightPalette.text
+                        : const Color(0xff343864),
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1197,8 +1217,10 @@ class _SettingsTile extends StatelessWidget {
                   data.subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff8185A1),
+                  style: TextStyle(
+                    color: t.night
+                        ? NightPalette.muted
+                        : const Color(0xff8185A1),
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
                   ),
@@ -1224,9 +1246,14 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: _accountCardDecoration(radius: 24, shadow: data.color),
+      decoration: _accountCardDecoration(
+        context,
+        radius: 24,
+        shadow: data.color,
+      ),
       child: Row(
         children: [
           _SettingIcon(icon: data.icon, color: data.color),
@@ -1240,34 +1267,44 @@ class _StatCard extends StatelessWidget {
                   data.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff44496D),
+                  style: TextStyle(
+                    color: t.night
+                        ? NightPalette.muted
+                        : const Color(0xff44496D),
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                TweenAnimationBuilder<int>(
-                  tween: IntTween(begin: 0, end: data.value),
-                  duration: 620.ms,
-                  curve: Curves.easeOutCubic,
-                  builder: (context, value, child) => Text(
-                    '$value',
-                    style: TextStyle(
-                      color: data.color,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    TweenAnimationBuilder<int>(
+                      tween: IntTween(begin: 0, end: data.value),
+                      duration: 620.ms,
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) => Text(
+                        '$value',
+                        style: TextStyle(
+                          color: data.color,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                Text(
-                  data.unit,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff7E829E),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
+                    const SizedBox(width: 6),
+                    Text(
+                      data.unit,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: t.night
+                            ? NightPalette.muted
+                            : const Color(0xff7E829E),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -1297,7 +1334,7 @@ class _AccountTapCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: Ink(
           padding: EdgeInsets.all(compact ? 10 : 14),
-          decoration: _accountCardDecoration(radius: 22),
+          decoration: _accountCardDecoration(context, radius: 22),
           child: child,
         ),
       ),
@@ -1514,10 +1551,15 @@ class _StatData {
   final Color color;
 }
 
-BoxDecoration _accountCardDecoration({
+BoxDecoration _accountCardDecoration(
+  BuildContext context, {
   double radius = 28,
   Color shadow = const Color(0xff7AAED3),
 }) {
+  final t = _themeOf(context);
+  if (t.night) {
+    return nightGlassDecoration(borderColor: shadow, radius: radius);
+  }
   return BoxDecoration(
     color: Colors.white.withValues(alpha: .94),
     borderRadius: BorderRadius.circular(radius),
