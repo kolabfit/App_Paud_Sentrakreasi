@@ -718,48 +718,53 @@ class _BadgeShowcase extends ConsumerWidget {
                         builder: (_) => const BadgeCollectionScreen(),
                       ),
                     ),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isOpen ? null : const Color(0xffE0E0E0),
-                        gradient: isOpen
-                            ? LinearGradient(
-                                colors: [
-                                  badge.glowColor.withValues(alpha: .72),
-                                  badge.glowColor,
+                    child:
+                        Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: isOpen
+                                    ? LinearGradient(
+                                        colors: [
+                                          badge.glowColor.withValues(
+                                            alpha: .72,
+                                          ),
+                                          badge.glowColor,
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 8),
+                                    color: isOpen
+                                        ? badge.glowColor.withValues(alpha: .28)
+                                        : Colors.grey.withValues(alpha: .15),
+                                  ),
                                 ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              )
-                            : null,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                            color: isOpen
-                                ? badge.glowColor.withValues(alpha: .28)
-                                : Colors.grey.withValues(alpha: .15),
-                          ),
-                        ],
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Image.asset(
-                          isOpen ? badge.assetUnlocked : badge.assetLocked,
-                          fit: BoxFit.contain,
-                          color: isOpen ? null : Colors.grey,
-                          colorBlendMode: isOpen ? null : BlendMode.saturation,
-                        ),
-                      ),
-                    )
-                        .animate(onPlay: (c) => c.repeat(reverse: true))
-                        .moveY(
-                          begin: isOpen ? -3 : 0,
-                          end: isOpen ? 3 : 0,
-                          duration: 1300.ms,
-                        ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Image.asset(
+                                  isOpen
+                                      ? badge.assetUnlocked
+                                      : badge.assetLocked,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            )
+                            .animate(onPlay: (c) => c.repeat(reverse: true))
+                            .moveY(
+                              begin: isOpen ? -3 : 0,
+                              end: isOpen ? 3 : 0,
+                              duration: 1300.ms,
+                            ),
                   ),
                 );
               }).toList(),
@@ -770,8 +775,11 @@ class _BadgeShowcase extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.emoji_events_rounded,
-                  color: Color(0xffFFB020), size: 18),
+              const Icon(
+                Icons.emoji_events_rounded,
+                color: Color(0xffFFB020),
+                size: 18,
+              ),
               const SizedBox(width: 6),
               Text(
                 '$unlocked / ${badges.length} Badge Terbuka',
