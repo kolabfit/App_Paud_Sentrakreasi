@@ -34,6 +34,8 @@ part 'src/songs_screen.dart';
 part 'src/account_screen.dart';
 part 'src/teacher_dashboard.dart';
 part 'src/screen_widgets.dart';
+part 'src/badge_system.dart';
+part 'src/badge_screen.dart';
 
 const adminEmail = 'andibayu8310@gmail.com';
 

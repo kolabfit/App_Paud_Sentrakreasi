@@ -350,13 +350,14 @@ class _PremiumProfileCard extends StatelessWidget {
   }
 }
 
-class _LearningStats extends StatelessWidget {
+class _LearningStats extends ConsumerWidget {
   const _LearningStats({required this.app});
   final AppState app;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tablet = MediaQuery.sizeOf(context).width >= 700;
+    final badgeCount = BadgeService.instance.unlockedCount(app.progress);
     final stats = [
       _StatData(
         Icons.menu_book_rounded,
@@ -368,22 +369,22 @@ class _LearningStats extends StatelessWidget {
       _StatData(
         Icons.event_available_rounded,
         'Streak Belajar',
-        12,
+        app.iqraStreak,
         'Hari',
         const Color(0xff16B9E8),
       ),
       _StatData(
         Icons.workspace_premium_rounded,
         'Badge',
-        8,
+        badgeCount,
         'Diperoleh',
         const Color(0xffFFB020),
       ),
       _StatData(
-        Icons.schedule_rounded,
-        'Waktu Belajar',
-        6,
-        'Jam 45m',
+        Icons.star_rounded,
+        'Total Poin',
+        app.stars,
+        'Bintang',
         const Color(0xff8B55F6),
       ),
     ];
@@ -678,60 +679,111 @@ class _OverallProgressCard extends StatelessWidget {
   }
 }
 
-class _BadgeShowcase extends StatelessWidget {
+class _BadgeShowcase extends ConsumerWidget {
   const _BadgeShowcase();
 
   @override
-  Widget build(BuildContext context) {
-    final badges = [
-      (Icons.shield_rounded, const Color(0xffB7D4F7)),
-      (Icons.star_rounded, const Color(0xff965BFF)),
-      (Icons.menu_book_rounded, const Color(0xff33C66A)),
-      (Icons.workspace_premium_rounded, const Color(0xffFFB020)),
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final app = ref.watch(appStateProvider);
+    final svc = BadgeService.instance;
+    final badges = svc.allBadges;
+    final unlocked = svc.unlockedCount(app.progress);
+
     return _AccountSectionCard(
       title: 'Koleksi Badge',
-      trailing: const Text(
-        'Lihat Semua',
-        style: TextStyle(
-          color: Color(0xff8B55F6),
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
+      trailing: GestureDetector(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const BadgeCollectionScreen()),
+        ),
+        child: const Text(
+          'Lihat Semua',
+          style: TextStyle(
+            color: Color(0xff8B55F6),
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ),
-      child: SizedBox(
-        height: 94,
-        child: Row(
-          children: badges
-              .map(
-                (b) => Expanded(
-                  child:
-                      Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [b.$2.withValues(alpha: .72), b.$2],
+      child: Column(
+        children: [
+          SizedBox(
+            height: 94,
+            child: Row(
+              children: badges.take(4).map((badge) {
+                final isOpen = svc.isUnlocked(badge, app.progress);
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const BadgeCollectionScreen(),
+                      ),
+                    ),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isOpen ? null : const Color(0xffE0E0E0),
+                        gradient: isOpen
+                            ? LinearGradient(
+                                colors: [
+                                  badge.glowColor.withValues(alpha: .72),
+                                  badge.glowColor,
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                              ),
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 8),
-                                  color: b.$2.withValues(alpha: .28),
-                                ),
-                              ],
-                            ),
-                            child: Icon(b.$1, color: Colors.white, size: 34),
-                          )
-                          .animate(onPlay: (c) => c.repeat(reverse: true))
-                          .moveY(begin: -3, end: 3, duration: 1300.ms),
+                              )
+                            : null,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                            color: isOpen
+                                ? badge.glowColor.withValues(alpha: .28)
+                                : Colors.grey.withValues(alpha: .15),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Image.asset(
+                          isOpen ? badge.assetUnlocked : badge.assetLocked,
+                          fit: BoxFit.contain,
+                          color: isOpen ? null : Colors.grey,
+                          colorBlendMode: isOpen ? null : BlendMode.saturation,
+                        ),
+                      ),
+                    )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .moveY(
+                          begin: isOpen ? -3 : 0,
+                          end: isOpen ? 3 : 0,
+                          duration: 1300.ms,
+                        ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Progress summary
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.emoji_events_rounded,
+                  color: Color(0xffFFB020), size: 18),
+              const SizedBox(width: 6),
+              Text(
+                '$unlocked / ${badges.length} Badge Terbuka',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xff7A7E9B),
                 ),
-              )
-              .toList(),
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
