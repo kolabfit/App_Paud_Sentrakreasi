@@ -7,6 +7,7 @@ BoxDecoration cardDecoration(
   double radius = 28,
 }) {
   final t = _themeOf(context);
+  if (t.night) return nightGlassDecoration(borderColor: borderColor);
   return BoxDecoration(
     color: t.widgetBg,
     borderRadius: BorderRadius.circular(radius),
@@ -31,6 +32,12 @@ BoxDecoration tactileCard(
 }) {
   final t = _themeOf(context);
   final b = border ?? t.widgetBorder;
+  if (t.night) {
+    return nightGlassDecoration(
+      borderColor: border ?? t.widgetBorder,
+      radius: radius,
+    );
+  }
   return BoxDecoration(
     color: t.widgetBg,
     borderRadius: BorderRadius.circular(radius),
@@ -97,11 +104,104 @@ TextStyle headlineBold(BuildContext context) => TextStyle(
   height: 1.15,
 );
 
-Color muted(BuildContext context) =>
-    Theme.of(context).colorScheme.onSurface.withValues(alpha: .55);
+Color muted(BuildContext context) => _themeOf(context).night
+    ? NightPalette.muted
+    : Theme.of(context).colorScheme.onSurface.withValues(alpha: .55);
 
-Color cardColor(BuildContext context) =>
-    Theme.of(context).colorScheme.surface.withValues(alpha: .94);
+Color cardColor(BuildContext context) => _themeOf(context).night
+    ? NightPalette.surface.withValues(alpha: .74)
+    : Theme.of(context).colorScheme.surface.withValues(alpha: .94);
+
+BoxDecoration nightGlassDecoration({
+  Color? borderColor,
+  double radius = 30,
+  double opacity = .72,
+}) {
+  final border = borderColor ?? NightPalette.cyan;
+  return BoxDecoration(
+    borderRadius: BorderRadius.circular(radius),
+    gradient: LinearGradient(
+      colors: [
+        NightPalette.surface.withValues(alpha: opacity),
+        NightPalette.purple.withValues(alpha: opacity - .10),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    border: Border.all(color: border.withValues(alpha: .42), width: 1.7),
+    boxShadow: [
+      BoxShadow(
+        blurRadius: 28,
+        offset: const Offset(0, 14),
+        color: border.withValues(alpha: .18),
+      ),
+      BoxShadow(
+        blurRadius: 38,
+        color: NightPalette.lavender.withValues(alpha: .10),
+      ),
+    ],
+  );
+}
+
+TextStyle nightGlowText({
+  required double fontSize,
+  Color color = NightPalette.text,
+  FontWeight weight = FontWeight.w900,
+}) => TextStyle(
+  fontFamily: 'Baloo2',
+  fontSize: fontSize,
+  fontWeight: weight,
+  color: color,
+  shadows: [
+    Shadow(blurRadius: 14, color: color.withValues(alpha: .24)),
+    Shadow(blurRadius: 26, color: NightPalette.cyan.withValues(alpha: .16)),
+  ],
+);
+
+class NightSparkles extends StatelessWidget {
+  const NightSparkles({this.count = 18, this.gold = false, super.key});
+  final int count;
+  final bool gold;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    return IgnorePointer(
+      child: Stack(
+        children: List.generate(count, (i) {
+          final left = ((i * 47) % 100) / 100 * size.width;
+          final top = 24.0 + (((i * 61) % 100) / 100 * size.height * .76);
+          final color = gold
+              ? NightPalette.gold
+              : [
+                  NightPalette.cyan,
+                  NightPalette.lavender,
+                  NightPalette.mint,
+                ][i % 3];
+          return Positioned(
+            left: left,
+            top: top,
+            child:
+                Icon(
+                      i.isEven
+                          ? Icons.star_rounded
+                          : Icons.auto_awesome_rounded,
+                      color: color.withValues(alpha: .46),
+                      size: 10 + (i % 5) * 3,
+                    )
+                    .animate(onPlay: (c) => c.repeat(reverse: true))
+                    .fade(begin: .32, end: .92, duration: (900 + i * 80).ms)
+                    .scale(
+                      begin: const Offset(.72, .72),
+                      end: const Offset(1.18, 1.18),
+                      duration: (1000 + i * 75).ms,
+                    ),
+          );
+        }),
+      ),
+    );
+  }
+}
 
 final softShadow = [
   BoxShadow(

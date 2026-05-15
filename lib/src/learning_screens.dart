@@ -57,6 +57,7 @@ class LearnMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStateProvider);
+    final t = app.theme;
     final size = MediaQuery.sizeOf(context);
     final tablet = size.width >= 700;
     final mascot = app.gender == Gender.girl
@@ -101,24 +102,32 @@ class LearnMenu extends ConsumerWidget {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          'assets/images/Background_image.png',
+          t.night
+              ? 'assets/images/Background_Image_Malam.png'
+              : 'assets/images/Background_image.png',
           fit: BoxFit.cover,
           alignment: Alignment.topCenter,
         ),
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: .02),
-                const Color(0xffEAF8FF).withValues(alpha: .58),
-                Colors.white.withValues(alpha: .82),
-              ],
+              colors: t.night
+                  ? [
+                      NightPalette.midnight.withValues(alpha: .12),
+                      NightPalette.purple.withValues(alpha: .50),
+                      NightPalette.midnight.withValues(alpha: .82),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: .02),
+                      const Color(0xffEAF8FF).withValues(alpha: .58),
+                      Colors.white.withValues(alpha: .82),
+                    ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
         ),
-        ...List.generate(18, (i) {
+        ...List.generate(t.night ? 26 : 18, (i) {
           final left = (i * 67 % max(1, size.width.toInt())).toDouble();
           final top = 42.0 + (i * 53 % 520);
           return Positioned(
@@ -129,7 +138,15 @@ class LearnMenu extends ConsumerWidget {
                       i.isEven
                           ? Icons.star_rounded
                           : Icons.auto_awesome_rounded,
-                      color: Colors.white.withValues(alpha: .86),
+                      color:
+                          (t.night
+                                  ? [
+                                      NightPalette.cyan,
+                                      NightPalette.gold,
+                                      NightPalette.lavender,
+                                    ][i % 3]
+                                  : Colors.white)
+                              .withValues(alpha: t.night ? .52 : .86),
                       size: i.isEven ? 18 : 13,
                     )
                     .animate(onPlay: (c) => c.repeat(reverse: true))
@@ -196,6 +213,7 @@ class _AdventureTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Row(
       children: [
         _AdventureGlassButton(icon: Icons.chevron_left_rounded, onTap: onBack),
@@ -203,14 +221,22 @@ class _AdventureTopBar extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: .93),
+            color: t.night
+                ? NightPalette.surface.withValues(alpha: .70)
+                : Colors.white.withValues(alpha: .93),
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white, width: 1.5),
+            border: Border.all(
+              color: t.night
+                  ? NightPalette.gold.withValues(alpha: .30)
+                  : Colors.white,
+              width: 1.5,
+            ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 18,
                 offset: const Offset(0, 9),
-                color: const Color(0xff4EA7DB).withValues(alpha: .18),
+                color: (t.night ? NightPalette.gold : const Color(0xff4EA7DB))
+                    .withValues(alpha: .18),
               ),
             ],
           ),
@@ -228,16 +254,20 @@ class _AdventureTopBar extends StatelessWidget {
                 children: [
                   Text(
                     '$stars',
-                    style: const TextStyle(
-                      color: Color(0xff3B3D86),
+                    style: TextStyle(
+                      color: t.night
+                          ? NightPalette.text
+                          : const Color(0xff3B3D86),
                       fontSize: 17,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Poin Kamu',
                     style: TextStyle(
-                      color: Color(0xff5A6090),
+                      color: t.night
+                          ? NightPalette.muted
+                          : const Color(0xff5A6090),
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                     ),
@@ -309,6 +339,7 @@ class _AdventureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -316,14 +347,19 @@ class _AdventureCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(34),
         child: Ink(
           decoration: BoxDecoration(
-            color: data.bg,
+            color: t.night
+                ? Color.lerp(data.bg, NightPalette.surface, .55)
+                : data.bg,
             borderRadius: BorderRadius.circular(34),
-            border: Border.all(color: Colors.white, width: 3),
+            border: Border.all(
+              color: t.night ? data.color.withValues(alpha: .46) : Colors.white,
+              width: 3,
+            ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 20,
                 offset: const Offset(0, 12),
-                color: data.color.withValues(alpha: .20),
+                color: data.color.withValues(alpha: t.night ? .34 : .20),
               ),
             ],
           ),
@@ -372,7 +408,9 @@ class _AdventureCard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: .78),
+                  color: t.night
+                      ? NightPalette.purple.withValues(alpha: .70)
+                      : Colors.white.withValues(alpha: .78),
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(31),
                   ),
@@ -398,8 +436,10 @@ class _AdventureCard extends StatelessWidget {
                             data.subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Color(0xff4D5179),
+                            style: TextStyle(
+                              color: t.night
+                                  ? NightPalette.muted
+                                  : const Color(0xff4D5179),
                               fontSize: 12,
                               height: 1.2,
                               fontWeight: FontWeight.w800,
@@ -452,17 +492,26 @@ class _AdventureMotivation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .92),
+        color: t.night
+            ? NightPalette.surface.withValues(alpha: .70)
+            : Colors.white.withValues(alpha: .92),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(
+          color: t.night
+              ? NightPalette.gold.withValues(alpha: .28)
+              : Colors.white,
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
             blurRadius: 20,
             offset: const Offset(0, 10),
-            color: const Color(0xff6AAFE6).withValues(alpha: .18),
+            color: (t.night ? NightPalette.gold : const Color(0xff6AAFE6))
+                .withValues(alpha: .18),
           ),
         ],
       ),
@@ -474,13 +523,15 @@ class _AdventureMotivation extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xffF1EAFF),
+                color: t.night
+                    ? NightPalette.purple.withValues(alpha: .62)
+                    : const Color(0xffF1EAFF),
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: const Text(
+              child: Text(
                 'Terus belajar ya! Setiap langkah kecil membawamu jadi hebat!',
                 style: TextStyle(
-                  color: Color(0xff4A3B8F),
+                  color: t.night ? NightPalette.text : const Color(0xff4A3B8F),
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
                   height: 1.25,
@@ -501,18 +552,25 @@ class _AdventureGlassButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Material(
-          color: Colors.white.withValues(alpha: .88),
+          color: t.night
+              ? NightPalette.surface.withValues(alpha: .72)
+              : Colors.white.withValues(alpha: .88),
           child: InkWell(
             onTap: onTap,
             child: SizedBox(
               width: 58,
               height: 58,
-              child: Icon(icon, color: const Color(0xff8B55F6), size: 34),
+              child: Icon(
+                icon,
+                color: t.night ? NightPalette.cyan : const Color(0xff8B55F6),
+                size: 34,
+              ),
             ),
           ),
         ),
@@ -1146,44 +1204,60 @@ class _KidsDreamBackground extends StatelessWidget {
   const _KidsDreamBackground();
 
   @override
-  Widget build(BuildContext context) => Stack(
-    fit: StackFit.expand,
-    children: [
-      Image.asset(
-        'assets/images/Background_image.png',
-        fit: BoxFit.cover,
-        alignment: Alignment.topCenter,
-      ),
-      DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withValues(alpha: .03),
-              Colors.white.withValues(alpha: .18),
-              Colors.white.withValues(alpha: .88),
-            ],
-            stops: const [0, .44, 1],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.asset(
+          t.night
+              ? 'assets/images/Background_Image_Malam.png'
+              : 'assets/images/Background_image.png',
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
+        ),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: t.night
+                  ? [
+                      NightPalette.midnight.withValues(alpha: .12),
+                      NightPalette.purple.withValues(alpha: .52),
+                      NightPalette.midnight.withValues(alpha: .86),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: .03),
+                      Colors.white.withValues(alpha: .18),
+                      Colors.white.withValues(alpha: .88),
+                    ],
+              stops: const [0, .44, 1],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
         ),
-      ),
-      ...List.generate(16, (i) {
-        return Positioned(
-          left: (i * 61 % 320).toDouble() + (i.isEven ? 12 : 80),
-          top: 48.0 + (i * 43 % 440),
-          child:
-              Icon(
-                    i.isEven ? Icons.star_rounded : Icons.auto_awesome_rounded,
-                    color: Colors.white.withValues(alpha: .75),
-                    size: 12 + (i % 4) * 3,
-                  )
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .moveY(begin: -5, end: 6, duration: (1300 + i * 80).ms),
-        );
-      }),
-    ],
-  );
+        if (t.night)
+          const NightSparkles(count: 28)
+        else
+          ...List.generate(16, (i) {
+            return Positioned(
+              left: (i * 61 % 320).toDouble() + (i.isEven ? 12 : 80),
+              top: 48.0 + (i * 43 % 440),
+              child:
+                  Icon(
+                        i.isEven
+                            ? Icons.star_rounded
+                            : Icons.auto_awesome_rounded,
+                        color: Colors.white.withValues(alpha: .75),
+                        size: 12 + (i % 4) * 3,
+                      )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .moveY(begin: -5, end: 6, duration: (1300 + i * 80).ms),
+            );
+          }),
+      ],
+    );
+  }
 }
 
 class _PremiumLearningHero extends StatelessWidget {
@@ -1209,6 +1283,7 @@ class _PremiumLearningHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     final tablet = MediaQuery.sizeOf(context).width >= 760;
     return SizedBox(
       height: tablet ? 286 : 252,
@@ -1220,19 +1295,30 @@ class _PremiumLearningHero extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(32),
                 gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: .50),
-                    accent.withValues(alpha: .15),
-                  ],
+                  colors: t.night
+                      ? [
+                          NightPalette.surface.withValues(alpha: .68),
+                          accent.withValues(alpha: .20),
+                          NightPalette.purple.withValues(alpha: .56),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: .50),
+                          accent.withValues(alpha: .15),
+                        ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                border: Border.all(color: Colors.white, width: 2),
+                border: Border.all(
+                  color: t.night
+                      ? NightPalette.cyan.withValues(alpha: .30)
+                      : Colors.white,
+                  width: 2,
+                ),
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 30,
                     offset: const Offset(0, 16),
-                    color: accent.withValues(alpha: .18),
+                    color: accent.withValues(alpha: t.night ? .32 : .18),
                   ),
                 ],
               ),
@@ -1303,6 +1389,34 @@ class _PremiumLearningHero extends StatelessWidget {
             ),
           ),
           Positioned(
+            right: tablet ? 32 : 8,
+            bottom: tablet ? 18 : 18,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: t.night ? 1 : 0,
+                duration: 420.ms,
+                child: Container(
+                  width: tablet ? 210 : 156,
+                  height: tablet ? 178 : 138,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 48,
+                        spreadRadius: 8,
+                        color: NightPalette.gold.withValues(alpha: .20),
+                      ),
+                      BoxShadow(
+                        blurRadius: 60,
+                        color: accent.withValues(alpha: .18),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
             right: tablet ? 18 : -18,
             bottom: -4,
             child:
@@ -1346,89 +1460,108 @@ class _PremiumSearchAndChips extends StatelessWidget {
   final ValueChanged<String> onChip;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(12),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .88),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: Colors.white),
-      boxShadow: [
-        BoxShadow(
-          blurRadius: 20,
-          offset: const Offset(0, 10),
-          color: const Color(0xff6DAEDB).withValues(alpha: .13),
-        ),
-      ],
-    ),
-    child: Column(
-      children: [
-        TextField(
-          controller: search,
-          onChanged: (_) => onChanged(),
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: Icon(Icons.search_rounded, color: accent),
-            filled: true,
-            fillColor: const Color(0xffF9FBFF),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(22),
-              borderSide: BorderSide.none,
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 14,
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 44,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: chips.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final chip = chips[i];
-              final active = chip == selected;
-              return GestureDetector(
-                onTap: () => onChip(chip),
-                child: AnimatedContainer(
-                  duration: 220.ms,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: active ? accent : Colors.white,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: active ? accent : const Color(0xffE7ECFF),
-                    ),
-                    boxShadow: active
-                        ? [
-                            BoxShadow(
-                              blurRadius: 16,
-                              color: accent.withValues(alpha: .24),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Text(
-                    chip,
-                    style: TextStyle(
-                      color: active ? Colors.white : const Color(0xff4C5875),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: t.night
+          ? nightGlassDecoration(borderColor: accent, radius: 28)
+          : BoxDecoration(
+              color: Colors.white.withValues(alpha: .88),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: Colors.white),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                  color: const Color(0xff6DAEDB).withValues(alpha: .13),
                 ),
-              );
-            },
+              ],
+            ),
+      child: Column(
+        children: [
+          TextField(
+            controller: search,
+            onChanged: (_) => onChanged(),
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon: Icon(Icons.search_rounded, color: accent),
+              filled: true,
+              fillColor: t.night
+                  ? NightPalette.midnight2.withValues(alpha: .60)
+                  : const Color(0xffF9FBFF),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(22),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 44,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: chips.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final chip = chips[i];
+                final active = chip == selected;
+                return GestureDetector(
+                  onTap: () => onChip(chip),
+                  child: AnimatedContainer(
+                    duration: 220.ms,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: active
+                          ? accent
+                          : (t.night
+                                ? NightPalette.surface.withValues(alpha: .62)
+                                : Colors.white),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: active
+                            ? accent
+                            : (t.night
+                                  ? NightPalette.cyan.withValues(alpha: .18)
+                                  : const Color(0xffE7ECFF)),
+                      ),
+                      boxShadow: active
+                          ? [
+                              BoxShadow(
+                                blurRadius: 16,
+                                color: accent.withValues(alpha: .24),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Text(
+                      chip,
+                      style: TextStyle(
+                        color: active
+                            ? Colors.white
+                            : (t.night
+                                  ? NightPalette.muted
+                                  : const Color(0xff4C5875)),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PremiumLearningCard extends StatelessWidget {
@@ -1461,180 +1594,198 @@ class _PremiumLearningCard extends StatelessWidget {
   final VoidCallback? onFavorite;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.transparent,
-    child: InkWell(
-      onTap: onAudio,
-      borderRadius: BorderRadius.circular(28),
-      child: Ink(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white, width: 2.2),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 22,
-              offset: const Offset(0, 12),
-              color: color.withValues(alpha: .55),
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    final bg = t.night ? Color.lerp(color, NightPalette.surface, .54)! : color;
+    final textColor = t.night ? NightPalette.text : const Color(0xff293464);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onAudio,
+        borderRadius: BorderRadius.circular(28),
+        child: Ink(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(
+              color: t.night ? color.withValues(alpha: .46) : Colors.white,
+              width: 2.2,
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: 7,
-              top: 7,
-              child: GestureDetector(
-                onTap: onFavorite,
-                child: Icon(
-                  kind == _PremiumCardKind.object
-                      ? (favorite
-                            ? Icons.star_rounded
-                            : Icons.star_border_rounded)
-                      : Icons.auto_awesome_rounded,
-                  color: const Color(0xffFFB927),
-                  size: 22,
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 22,
+                offset: const Offset(0, 12),
+                color: color.withValues(alpha: t.night ? .34 : .55),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: 7,
+                top: 7,
+                child: GestureDetector(
+                  onTap: onFavorite,
+                  child: Icon(
+                    kind == _PremiumCardKind.object
+                        ? (favorite
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded)
+                        : Icons.auto_awesome_rounded,
+                    color: const Color(0xffFFB927),
+                    size: 22,
+                  ),
                 ),
               ),
-            ),
-            Column(
-              children: [
-                if (kind == _PremiumCardKind.letter ||
-                    kind == _PremiumCardKind.number)
-                  SizedBox(
-                    height: 62,
-                    child: FittedBox(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          color: Color(0xff293464),
-                          fontSize: 64,
-                          height: 1,
-                          fontWeight: FontWeight.w900,
+              Column(
+                children: [
+                  if (kind == _PremiumCardKind.letter ||
+                      kind == _PremiumCardKind.number)
+                    SizedBox(
+                      height: 62,
+                      child: FittedBox(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            color:
+                                kind == _PremiumCardKind.letter ||
+                                    kind == _PremiumCardKind.number
+                                ? (t.night ? color : const Color(0xff293464))
+                                : textColor,
+                            fontSize: 64,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                else
-                  const SizedBox(height: 12),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 6,
-                    ),
-                    child: AppImage(url: imageUrl, fit: BoxFit.contain),
-                  ),
-                ),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xff293464),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  caption,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: const Color(0xff293464).withValues(alpha: .68),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 86),
+                    )
+                  else
+                    const SizedBox(height: 12),
+                  Expanded(
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 6,
                         vertical: 6,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .70),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        badge,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xff59617E),
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
+                      child: AppImage(url: imageUrl, fit: BoxFit.contain),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color:
+                          (t.night
+                                  ? NightPalette.muted
+                                  : const Color(0xff293464))
+                              .withValues(alpha: .82),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 86),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(
+                            alpha: t.night ? .16 : .70,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          badge,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xff59617E),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: onMic,
-                      child: Container(
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: onMic,
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: listening
+                                ? Colors.redAccent
+                                : const Color(0xff32C653),
+                            boxShadow: [
+                              BoxShadow(
+                                blurRadius: listening ? 20 : 12,
+                                color:
+                                    (listening
+                                            ? Colors.redAccent
+                                            : const Color(0xff32C653))
+                                        .withValues(alpha: .28),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            listening
+                                ? Icons.graphic_eq_rounded
+                                : Icons.mic_rounded,
+                            color: Colors.white,
+                            size: 19,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
                         width: 34,
                         height: 34,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: listening
-                              ? Colors.redAccent
-                              : const Color(0xff32C653),
+                          color: const Color(0xff1498BD),
                           boxShadow: [
                             BoxShadow(
-                              blurRadius: listening ? 20 : 12,
-                              color:
-                                  (listening
-                                          ? Colors.redAccent
-                                          : const Color(0xff32C653))
-                                      .withValues(alpha: .28),
+                              blurRadius: 12,
+                              color: const Color(
+                                0xff1498BD,
+                              ).withValues(alpha: .28),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          listening
-                              ? Icons.graphic_eq_rounded
-                              : Icons.mic_rounded,
+                        child: const Icon(
+                          Icons.volume_up_rounded,
                           color: Colors.white,
                           size: 19,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xff1498BD),
-                        boxShadow: [
-                          BoxShadow(
-                            blurRadius: 12,
-                            color: const Color(
-                              0xff1498BD,
-                            ).withValues(alpha: .28),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.volume_up_rounded,
-                        color: Colors.white,
-                        size: 19,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  ).animate().fadeIn(duration: 250.ms).slideY(begin: .05);
+    ).animate().fadeIn(duration: 250.ms).slideY(begin: .05);
+  }
 }
 
 class _VoiceProgressPanel extends StatelessWidget {
@@ -1651,74 +1802,86 @@ class _VoiceProgressPanel extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => AnimatedContainer(
-    duration: 220.ms,
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .90),
-      borderRadius: BorderRadius.circular(26),
-      border: Border.all(
-        color: listening ? accent.withValues(alpha: .45) : Colors.white,
-        width: 2,
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return AnimatedContainer(
+      duration: 220.ms,
+      padding: const EdgeInsets.all(14),
+      decoration: t.night
+          ? nightGlassDecoration(
+              borderColor: listening ? accent : NightPalette.cyan,
+              radius: 26,
+            )
+          : BoxDecoration(
+              color: Colors.white.withValues(alpha: .90),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: listening ? accent.withValues(alpha: .45) : Colors.white,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: listening ? 26 : 18,
+                  offset: const Offset(0, 10),
+                  color: accent.withValues(alpha: listening ? .22 : .10),
+                ),
+              ],
+            ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: listening ? Colors.redAccent : accent,
+            ),
+            child: Icon(
+              listening
+                  ? Icons.graphic_eq_rounded
+                  : Icons.record_voice_over_rounded,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  feedback,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: t.night
+                        ? NightPalette.text
+                        : const Color(0xff293464),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  heard.isEmpty
+                      ? 'Kalimat terdengar akan muncul di sini.'
+                      : 'Terdengar: "$heard"',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: t.night
+                        ? NightPalette.muted
+                        : const Color(0xff66708F),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
-      boxShadow: [
-        BoxShadow(
-          blurRadius: listening ? 26 : 18,
-          offset: const Offset(0, 10),
-          color: accent.withValues(alpha: listening ? .22 : .10),
-        ),
-      ],
-    ),
-    child: Row(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: listening ? Colors.redAccent : accent,
-          ),
-          child: Icon(
-            listening
-                ? Icons.graphic_eq_rounded
-                : Icons.record_voice_over_rounded,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                feedback,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xff293464),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                heard.isEmpty
-                    ? 'Kalimat terdengar akan muncul di sini.'
-                    : 'Terdengar: "$heard"',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Color(0xff66708F),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+    );
+  }
 }
 
 class _PremiumPagination extends StatelessWidget {
@@ -1775,83 +1938,92 @@ class _LearningMotivationPanel extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .90),
-      borderRadius: BorderRadius.circular(30),
-      border: Border.all(color: Colors.white, width: 2),
-      boxShadow: [
-        BoxShadow(
-          blurRadius: 22,
-          offset: const Offset(0, 12),
-          color: accent.withValues(alpha: .13),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Image.asset(
-              'assets/images/Anak_hebat.png',
-              width: 76,
-              height: 76,
-              fit: BoxFit.contain,
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: t.night
+          ? nightGlassDecoration(borderColor: accent)
+          : BoxDecoration(
+              color: Colors.white.withValues(alpha: .90),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 22,
+                  offset: const Offset(0, 12),
+                  color: accent.withValues(alpha: .13),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Belajar jadi mudah!',
-                    style: TextStyle(
-                      color: Color(0xff293464),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 5),
-                  Text(
-                    'Dengarkan suara, lihat gambar, dan ingat materinya!',
-                    style: TextStyle(
-                      color: Color(0xff66708F),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Image.asset(
+                'assets/images/Anak_hebat.png',
+                width: 76,
+                height: 76,
+                fit: BoxFit.contain,
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _LearningMiniFeature(
-              Icons.volume_up_rounded,
-              'Dengar Suara',
-              accent,
-            ),
-            const SizedBox(width: 8),
-            _LearningMiniFeature(
-              Icons.image_rounded,
-              'Lihat Gambar',
-              const Color(0xffFF8F1F),
-            ),
-            const SizedBox(width: 8),
-            _LearningMiniFeature(
-              Icons.psychology_rounded,
-              'Ingat & Pahami',
-              const Color(0xff32C653),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Belajar jadi mudah!',
+                      style: TextStyle(
+                        color: t.night
+                            ? NightPalette.text
+                            : const Color(0xff293464),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Dengarkan suara, lihat gambar, dan ingat materinya!',
+                      style: TextStyle(
+                        color: t.night
+                            ? NightPalette.muted
+                            : const Color(0xff66708F),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _LearningMiniFeature(
+                Icons.volume_up_rounded,
+                'Dengar Suara',
+                accent,
+              ),
+              const SizedBox(width: 8),
+              _LearningMiniFeature(
+                Icons.image_rounded,
+                'Lihat Gambar',
+                const Color(0xffFF8F1F),
+              ),
+              const SizedBox(width: 8),
+              _LearningMiniFeature(
+                Icons.psychology_rounded,
+                'Ingat & Pahami',
+                const Color(0xff32C653),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _LearningMiniFeature extends StatelessWidget {
@@ -1861,32 +2033,35 @@ class _LearningMiniFeature extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: .10),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 5),
-          Text(
-            text,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xff4B5574),
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .10),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 5),
+            Text(
+              text,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: t.night ? NightPalette.text : const Color(0xff4B5574),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _PremiumRoundButton extends StatelessWidget {
@@ -1903,35 +2078,40 @@ class _PremiumRoundButton extends StatelessWidget {
   final String? label;
 
   @override
-  Widget build(BuildContext context) => Material(
-    color: Colors.white.withValues(alpha: .92),
-    borderRadius: BorderRadius.circular(22),
-    child: InkWell(
-      onTap: onTap,
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Material(
+      color: t.night
+          ? NightPalette.surface.withValues(alpha: .72)
+          : Colors.white.withValues(alpha: .92),
       borderRadius: BorderRadius.circular(22),
-      child: SizedBox(
-        width: label == null ? 48 : 58,
-        height: 48,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: label == null ? 31 : 22),
-            if (label != null)
-              Text(
-                label!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w900,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: SizedBox(
+          width: label == null ? 48 : 58,
+          height: 48,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: label == null ? 31 : 22),
+              if (label != null)
+                Text(
+                  label!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _PremiumPoints extends StatelessWidget {
@@ -1939,43 +2119,48 @@ class _PremiumPoints extends StatelessWidget {
   final int stars;
 
   @override
-  Widget build(BuildContext context) => Container(
-    height: 48,
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .92),
-      borderRadius: BorderRadius.circular(22),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.star_rounded, color: Color(0xffFFC928), size: 25),
-        const SizedBox(width: 5),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$stars',
-              style: const TextStyle(
-                color: Color(0xff293464),
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: t.night
+            ? NightPalette.surface.withValues(alpha: .72)
+            : Colors.white.withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star_rounded, color: Color(0xffFFC928), size: 25),
+          const SizedBox(width: 5),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '$stars',
+                style: TextStyle(
+                  color: t.night ? NightPalette.text : const Color(0xff293464),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-            const Text(
-              'Poin',
-              style: TextStyle(
-                color: Color(0xff6F7692),
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
+              Text(
+                'Poin',
+                style: TextStyle(
+                  color: t.night ? NightPalette.muted : const Color(0xff6F7692),
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _PremiumEmptyState extends StatelessWidget {
@@ -1983,18 +2168,23 @@ class _PremiumEmptyState extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: .88),
-      borderRadius: BorderRadius.circular(28),
-    ),
-    child: Text(
-      'Belum ada hasil yang cocok.',
-      textAlign: TextAlign.center,
-      style: TextStyle(color: accent, fontWeight: FontWeight.w900),
-    ),
-  );
+  Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: t.night
+            ? NightPalette.surface.withValues(alpha: .72)
+            : Colors.white.withValues(alpha: .88),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Text(
+        'Belum ada hasil yang cocok.',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: accent, fontWeight: FontWeight.w900),
+      ),
+    );
+  }
 }
 
 String _objectFamily(LearningObject item) {

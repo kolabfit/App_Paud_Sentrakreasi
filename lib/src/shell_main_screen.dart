@@ -19,8 +19,8 @@ class ShellScreen extends ConsumerWidget {
       };
     }
     return Scaffold(
-      backgroundColor: const Color(0xffF7FBFF),
-      extendBody: false,
+      backgroundColor: app.theme.bg,
+      extendBody: true,
       body: ThemedBackground(
         child: SafeArea(
           child: AnimatedSwitcher(
@@ -54,17 +54,31 @@ class _FancyBottomNav extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIdx = TabItem.values.indexOf(app.tab);
-    return Container(
+    final dark = app.theme.night;
+    final nav = Container(
       margin: const EdgeInsets.fromLTRB(18, 0, 18, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: dark
+            ? LinearGradient(
+                colors: [
+                  NightPalette.purple.withValues(alpha: .82),
+                  NightPalette.midnight2.withValues(alpha: .72),
+                ],
+              )
+            : null,
+        color: dark ? null : Colors.white,
         borderRadius: BorderRadius.circular(34),
-        border: Border.all(color: const Color(0xffEEF2FF)),
+        border: Border.all(
+          color: dark
+              ? NightPalette.cyan.withValues(alpha: .26)
+              : const Color(0xffEEF2FF),
+        ),
         boxShadow: [
           BoxShadow(
-            blurRadius: 28,
+            blurRadius: dark ? 36 : 28,
             offset: const Offset(0, 14),
-            color: const Color(0xff5D6B9A).withValues(alpha: .16),
+            color: (dark ? NightPalette.cyan : const Color(0xff5D6B9A))
+                .withValues(alpha: dark ? .18 : .16),
           ),
         ],
       ),
@@ -84,11 +98,20 @@ class _FancyBottomNav extends ConsumerWidget {
                 icon: icons[i],
                 label: labels[i],
                 isActive: selectedIdx == i,
+                dark: dark,
                 onTap: () => ref.read(appStateProvider).go(TabItem.values[i]),
               ),
             );
           }),
         ),
+      ),
+    );
+    if (!dark) return nav;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(34),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: nav,
       ),
     );
   }
@@ -99,16 +122,21 @@ class _NavItem extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.isActive,
+    required this.dark,
     required this.onTap,
   });
   final IconData icon;
   final String label;
   final bool isActive;
+  final bool dark;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    const activeColor = Color(0xff1498BD);
+    final activeColor = dark ? NightPalette.cyan : const Color(0xff1498BD);
+    final inactiveColor = dark
+        ? NightPalette.muted.withValues(alpha: .72)
+        : const Color(0xff6F7495);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -119,8 +147,9 @@ class _NavItem extends StatelessWidget {
           gradient: isActive
               ? LinearGradient(
                   colors: [
-                    activeColor.withValues(alpha: .18),
-                    const Color(0xff68E2C2).withValues(alpha: .14),
+                    activeColor.withValues(alpha: dark ? .25 : .18),
+                    (dark ? NightPalette.lavender : const Color(0xff68E2C2))
+                        .withValues(alpha: dark ? .18 : .14),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -131,7 +160,7 @@ class _NavItem extends StatelessWidget {
               ? [
                   BoxShadow(
                     blurRadius: 18,
-                    color: activeColor.withValues(alpha: .22),
+                    color: activeColor.withValues(alpha: dark ? .34 : .22),
                   ),
                 ]
               : null,
@@ -148,13 +177,15 @@ class _NavItem extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isActive
-                      ? Colors.white.withValues(alpha: .86)
+                      ? (dark
+                            ? NightPalette.lavender.withValues(alpha: .20)
+                            : Colors.white.withValues(alpha: .86))
                       : Colors.transparent,
                 ),
                 child: Icon(
                   icon,
                   size: 24,
-                  color: isActive ? activeColor : const Color(0xff6F7495),
+                  color: isActive ? activeColor : inactiveColor,
                 ),
               ),
             ),
@@ -166,7 +197,9 @@ class _NavItem extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
-                color: isActive ? activeColor : const Color(0xff59607F),
+                color: isActive
+                    ? activeColor
+                    : (dark ? NightPalette.muted : const Color(0xff59607F)),
               ),
             ),
             AnimatedContainer(
@@ -287,6 +320,7 @@ class _HomeHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = app.theme.night;
     final tablet = MediaQuery.sizeOf(context).width >= 700;
     final name = app.childName.trim().isEmpty || app.childName == 'Teman'
         ? 'Google User'
@@ -305,7 +339,31 @@ class _HomeHero extends StatelessWidget {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(34),
-              child: Stack(fit: StackFit.expand),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (dark)
+                    Image.asset(
+                      'assets/images/Background_Image_Malam.png',
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                    ),
+                  AnimatedContainer(
+                    duration: 420.ms,
+                    decoration: dark
+                        ? nightGlassDecoration(
+                            borderColor: NightPalette.lavender,
+                            radius: 34,
+                            opacity: .50,
+                          )
+                        : BoxDecoration(
+                            borderRadius: BorderRadius.circular(34),
+                            color: Colors.white.withValues(alpha: .08),
+                          ),
+                  ),
+                  if (dark) const NightSparkles(count: 14, gold: true),
+                ],
+              ),
             ),
           ),
           Positioned(
@@ -331,12 +389,18 @@ class _HomeHero extends StatelessWidget {
                                 fontSize: tablet ? 28 : 21,
                                 height: 1.04,
                                 fontWeight: FontWeight.w900,
-                                color: Color(0xff3A268A),
-                                shadows: const [
+                                color: dark
+                                    ? NightPalette.text
+                                    : const Color(0xff3A268A),
+                                shadows: [
                                   Shadow(
-                                    blurRadius: 8,
-                                    color: Colors.white,
-                                    offset: Offset(0, 2),
+                                    blurRadius: dark ? 18 : 8,
+                                    color: dark
+                                        ? NightPalette.cyan.withValues(
+                                            alpha: .34,
+                                          )
+                                        : Colors.white,
+                                    offset: const Offset(0, 2),
                                   ),
                                 ],
                               ),
@@ -356,14 +420,18 @@ class _HomeHero extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Color(0xff595A78),
+                          color: dark
+                              ? NightPalette.muted
+                              : const Color(0xff595A78),
                           fontSize: tablet ? 15 : 12,
                           fontWeight: FontWeight.w800,
-                          shadows: const [
+                          shadows: [
                             Shadow(
-                              blurRadius: 7,
-                              color: Colors.white,
-                              offset: Offset(0, 2),
+                              blurRadius: dark ? 16 : 7,
+                              color: dark
+                                  ? NightPalette.midnight.withValues(alpha: .65)
+                                  : Colors.white,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
@@ -376,6 +444,34 @@ class _HomeHero extends StatelessWidget {
                 const SizedBox(width: 8),
                 const _NotifyButton(),
               ],
+            ),
+          ),
+          Positioned(
+            right: tablet ? 24 : 4,
+            bottom: tablet ? 8 : 8,
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: dark ? 1 : 0,
+                duration: 420.ms,
+                child: Container(
+                  width: tablet ? 160 : 126,
+                  height: tablet ? 150 : 116,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 42,
+                        spreadRadius: 8,
+                        color: NightPalette.gold.withValues(alpha: .22),
+                      ),
+                      BoxShadow(
+                        blurRadius: 54,
+                        color: NightPalette.cyan.withValues(alpha: .16),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
           Positioned(
@@ -408,18 +504,22 @@ class _AvatarBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       width: 62,
       height: 62,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
+        color: t.night
+            ? NightPalette.surface.withValues(alpha: .80)
+            : Colors.white,
         boxShadow: [
           BoxShadow(
             blurRadius: 16,
             offset: const Offset(0, 8),
-            color: const Color(0xff269BD8).withValues(alpha: .22),
+            color: (t.night ? NightPalette.cyan : const Color(0xff269BD8))
+                .withValues(alpha: .22),
           ),
         ],
       ),
@@ -434,6 +534,7 @@ class _PointPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final night = _themeOf(context).night;
     return _Glass(
       radius: 24,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -447,18 +548,18 @@ class _PointPill extends StatelessWidget {
             children: [
               Text(
                 '$stars',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xff25305E),
+                  color: night ? NightPalette.text : const Color(0xff25305E),
                 ),
               ),
-              const Text(
+              Text(
                 'Poin',
                 style: TextStyle(
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xff6A6D8E),
+                  color: night ? NightPalette.muted : const Color(0xff6A6D8E),
                 ),
               ),
             ],
@@ -696,20 +797,29 @@ class _LearningHomeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
+    final bg = t.night
+        ? Color.lerp(item.bg, NightPalette.surface, .55)!
+        : item.bg;
     return GestureDetector(
       onTap: onTap,
       child:
           Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: item.bg,
+                  color: bg,
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.white, width: 3),
+                  border: Border.all(
+                    color: t.night
+                        ? item.color.withValues(alpha: .44)
+                        : Colors.white,
+                    width: 3,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      blurRadius: 20,
+                      blurRadius: t.night ? 30 : 20,
                       offset: const Offset(0, 10),
-                      color: item.color.withValues(alpha: .16),
+                      color: item.color.withValues(alpha: t.night ? .30 : .16),
                     ),
                   ],
                 ),
@@ -720,7 +830,9 @@ class _LearningHomeTile extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .28),
+                          color: Colors.white.withValues(
+                            alpha: t.night ? .12 : .28,
+                          ),
                           borderRadius: BorderRadius.circular(22),
                         ),
                         child: Image.asset(item.asset, fit: BoxFit.contain),
@@ -730,7 +842,9 @@ class _LearningHomeTile extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.fromLTRB(12, 9, 8, 9),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: .74),
+                        color: t.night
+                            ? NightPalette.purple.withValues(alpha: .62)
+                            : Colors.white.withValues(alpha: .74),
                         borderRadius: BorderRadius.circular(23),
                       ),
                       child: Row(
@@ -754,8 +868,10 @@ class _LearningHomeTile extends StatelessWidget {
                                   item.subtitle,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xff464B72),
+                                  style: TextStyle(
+                                    color: t.night
+                                        ? NightPalette.muted
+                                        : const Color(0xff464B72),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w800,
                                   ),
@@ -805,6 +921,7 @@ class _HomeProgressPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     final entries = [
       _ProgressHomeItem(
         'Huruf',
@@ -832,15 +949,21 @@ class _HomeProgressPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.bar_chart_rounded, color: Color(0xff42C869), size: 24),
-              SizedBox(width: 8),
+              const Icon(
+                Icons.bar_chart_rounded,
+                color: Color(0xff42C869),
+                size: 24,
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   'Progress Belajarmu',
                   style: TextStyle(
-                    color: Color(0xff303163),
+                    color: t.night
+                        ? NightPalette.text
+                        : const Color(0xff303163),
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
                   ),
@@ -873,6 +996,7 @@ class _CircularProgressMini extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Column(
       children: [
         SizedBox(
@@ -908,8 +1032,8 @@ class _CircularProgressMini extends StatelessWidget {
           item.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xff42496E),
+          style: TextStyle(
+            color: t.night ? NightPalette.muted : const Color(0xff42496E),
             fontSize: 11,
             fontWeight: FontWeight.w800,
           ),
@@ -1169,20 +1293,23 @@ class _SoftCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .92),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 1.6),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 24,
-            offset: const Offset(0, 12),
-            color: const Color(0xff7AAED3).withValues(alpha: .18),
-          ),
-        ],
-      ),
+      decoration: t.night
+          ? nightGlassDecoration(borderColor: NightPalette.lavender)
+          : BoxDecoration(
+              color: Colors.white.withValues(alpha: .92),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white, width: 1.6),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                  color: const Color(0xff7AAED3).withValues(alpha: .18),
+                ),
+              ],
+            ),
       child: child,
     );
   }
@@ -1200,6 +1327,7 @@ class _Glass extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
@@ -1207,9 +1335,15 @@ class _Glass extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: .72),
+            color: t.night
+                ? NightPalette.surface.withValues(alpha: .58)
+                : Colors.white.withValues(alpha: .72),
             borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: Colors.white.withValues(alpha: .84)),
+            border: Border.all(
+              color: t.night
+                  ? NightPalette.cyan.withValues(alpha: .24)
+                  : Colors.white.withValues(alpha: .84),
+            ),
           ),
           child: child,
         ),

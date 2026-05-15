@@ -1,11 +1,24 @@
 part of '../main.dart';
 
-class AccountScreen extends ConsumerWidget {
+class AccountScreen extends ConsumerStatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AccountScreen> createState() => _AccountScreenState();
+}
+
+class _AccountScreenState extends ConsumerState<AccountScreen> {
+  bool themePage = false;
+
+  @override
+  Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
+    if (themePage) {
+      return _ThemeSettingsPage(
+        app: app,
+        onBack: () => setState(() => themePage = false),
+      );
+    }
     final tablet = MediaQuery.sizeOf(context).width >= 700;
     final totalProgress = _accountTotalProgress(app.progress);
     return Align(
@@ -34,7 +47,10 @@ class AccountScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
             ],
-            _SettingsSection(app: app),
+            _SettingsSection(
+              app: app,
+              onThemeTap: () => setState(() => themePage = true),
+            ),
             const SizedBox(height: 16),
             if (tablet)
               Row(
@@ -404,8 +420,9 @@ class _LearningStats extends ConsumerWidget {
 }
 
 class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({required this.app});
+  const _SettingsSection({required this.app, required this.onThemeTap});
   final AppState app;
+  final VoidCallback onThemeTap;
 
   @override
   Widget build(BuildContext context) {
@@ -472,9 +489,237 @@ class _SettingsSection extends StatelessWidget {
           childAspectRatio: tablet ? 5.2 : 4.8,
         ),
         itemCount: settings.length,
-        itemBuilder: (_, i) => _SettingsTile(data: settings[i]),
+        itemBuilder: (_, i) => _SettingsTile(
+          data: settings[i],
+          onTap: settings[i].title == 'Tema'
+              ? onThemeTap
+              : () => Feedback.forTap(context),
+        ),
       ),
     );
+  }
+}
+
+class _ThemeSettingsPage extends ConsumerWidget {
+  const _ThemeSettingsPage({required this.app, required this.onBack});
+  final AppState app;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tablet = MediaQuery.sizeOf(context).width >= 700;
+    final current = app.theme;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: tablet ? 980 : 520),
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+            tablet ? 28 : 18,
+            14,
+            tablet ? 28 : 18,
+            126,
+          ),
+          children: [
+            Row(
+              children: [
+                _AccountTapCard(
+                  onTap: onBack,
+                  compact: true,
+                  child: const Icon(
+                    Icons.chevron_left_rounded,
+                    color: Color(0xff8B55F6),
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Ganti Tema',
+                    style: sectionTitle(context).copyWith(
+                      color: current.night
+                          ? NightPalette.text
+                          : const Color(0xff303163),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: current.night
+                  ? nightGlassDecoration(
+                      borderColor: current.primary,
+                      radius: 30,
+                    )
+                  : _accountCardDecoration(shadow: current.primary, radius: 30),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      current.asset,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          current.name,
+                          style: TextStyle(
+                            color: current.night
+                                ? NightPalette.text
+                                : const Color(0xff303163),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tema sedang aktif',
+                          style: TextStyle(
+                            color: current.night
+                                ? NightPalette.muted
+                                : const Color(0xff8185A1),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.check_circle_rounded,
+                    color: current.accent,
+                    size: 30,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _AccountSectionCard(
+              title: 'Pilih Tema',
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: appThemes.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: tablet ? 3 : 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: tablet ? .94 : .82,
+                ),
+                itemBuilder: (context, i) {
+                  final theme = appThemes[i];
+                  final picked = theme.id == app.themeId;
+                  return _SimpleThemeCard(
+                    theme: theme,
+                    picked: picked,
+                    onTap: () {
+                      Feedback.forTap(context);
+                      ref.read(appStateProvider).setTheme(theme.id);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SimpleThemeCard extends StatelessWidget {
+  const _SimpleThemeCard({
+    required this.theme,
+    required this.picked,
+    required this.onTap,
+  });
+  final AppThemeData theme;
+  final bool picked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNight = theme.night;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(26),
+        child: Ink(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isNight
+                ? NightPalette.surface.withValues(alpha: .78)
+                : Colors.white.withValues(alpha: .94),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(
+              color: picked
+                  ? theme.accent
+                  : theme.primary.withValues(alpha: .25),
+              width: picked ? 3 : 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: picked ? 22 : 12,
+                offset: const Offset(0, 8),
+                color: theme.primary.withValues(alpha: picked ? .28 : .10),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset(theme.asset, fit: BoxFit.cover),
+                      if (picked)
+                        Align(
+                          alignment: Alignment.topRight,
+                          child: Container(
+                            margin: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: theme.accent,
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                theme.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isNight ? NightPalette.text : const Color(0xff303163),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 220.ms).slideY(begin: .04);
   }
 }
 
@@ -919,13 +1164,14 @@ class _AccountSectionCard extends StatelessWidget {
 }
 
 class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({required this.data});
+  const _SettingsTile({required this.data, required this.onTap});
   final _SettingData data;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return _AccountTapCard(
-      onTap: () => Feedback.forTap(context),
+      onTap: onTap,
       compact: true,
       child: Row(
         children: [
@@ -1395,6 +1641,31 @@ class ThemeWheel extends ConsumerWidget {
                           ),
                         );
                       }),
+                      if (selected.night)
+                        ...List.generate(16, (i) {
+                          final a = (2 * pi * i / 16) - pi / 2;
+                          return Transform.translate(
+                            offset: Offset(
+                              cos(a) * radius * .47,
+                              sin(a) * radius * .47,
+                            ),
+                            child: Icon(
+                              i.isEven
+                                  ? Icons.star_rounded
+                                  : Icons.auto_awesome_rounded,
+                              size: i.isEven ? 14 : 10,
+                              color: NightPalette.gold.withValues(alpha: .70),
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 12,
+                                  color: NightPalette.gold.withValues(
+                                    alpha: .65,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
                       Container(
                         width: radius * .98,
                         height: radius * .98,
@@ -1503,6 +1774,7 @@ class _WheelThemeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNight = theme.night;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedScale(
@@ -1519,19 +1791,45 @@ class _WheelThemeBadge extends StatelessWidget {
                 color: Colors.white,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: picked ? theme.accent : theme.primary,
+                  color: picked
+                      ? theme.accent
+                      : (isNight ? NightPalette.lavender : theme.primary),
                   width: picked ? 5 : 3,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    blurRadius: picked ? 22 : 10,
+                    blurRadius: picked || isNight ? 24 : 10,
                     offset: const Offset(0, 8),
-                    color: theme.primary.withValues(alpha: picked ? .42 : .22),
+                    color: (isNight ? NightPalette.cyan : theme.primary)
+                        .withValues(alpha: picked ? .42 : .22),
                   ),
                 ],
               ),
               child: ClipOval(
-                child: Image.asset(theme.asset, fit: BoxFit.cover),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.asset(theme.asset, fit: BoxFit.cover),
+                    if (isNight)
+                      Align(
+                        alignment: Alignment.topRight,
+                        child:
+                            Icon(
+                                  Icons.nightlight_round,
+                                  color: NightPalette.gold.withValues(
+                                    alpha: .95,
+                                  ),
+                                  size: 24,
+                                )
+                                .animate(onPlay: (c) => c.repeat(reverse: true))
+                                .scale(
+                                  begin: const Offset(.88, .88),
+                                  end: const Offset(1.12, 1.12),
+                                  duration: 1100.ms,
+                                ),
+                      ),
+                  ],
+                ),
               ),
             ),
             Transform.translate(
@@ -1542,10 +1840,11 @@ class _WheelThemeBadge extends StatelessWidget {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isNight ? NightPalette.surface : Colors.white,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
-                    color: theme.primary.withValues(alpha: .55),
+                    color: (isNight ? NightPalette.cyan : theme.primary)
+                        .withValues(alpha: .55),
                     width: 1.5,
                   ),
                   boxShadow: [
@@ -1560,7 +1859,7 @@ class _WheelThemeBadge extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w900,
-                    color: theme.primary,
+                    color: isNight ? NightPalette.text : theme.primary,
                   ),
                 ),
               ),

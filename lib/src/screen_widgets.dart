@@ -695,26 +695,57 @@ class ThemedBackground extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = ref.watch(appStateProvider).theme;
-    return DecoratedBox(
+    return AnimatedContainer(
+      duration: 520.ms,
+      curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
         color: t.bg,
-        image: t.backgroundAsset == null
-            ? null
-            : DecorationImage(
-                image: AssetImage(t.backgroundAsset!),
-                fit: BoxFit.cover,
-                opacity: .42,
-              ),
         gradient: LinearGradient(
-          colors: [
-            t.gradientStart.withValues(alpha: .88),
-            t.gradientEnd.withValues(alpha: .88),
-          ],
+          colors: t.night
+              ? [
+                  NightPalette.midnight.withValues(alpha: .96),
+                  NightPalette.midnight2.withValues(alpha: .94),
+                  NightPalette.purple.withValues(alpha: .95),
+                ]
+              : [
+                  t.gradientStart.withValues(alpha: .88),
+                  t.gradientEnd.withValues(alpha: .88),
+                ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
-      child: child,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (t.backgroundAsset != null)
+            AnimatedOpacity(
+              opacity: t.night ? .42 : .42,
+              duration: 520.ms,
+              child: Image.asset(
+                t.backgroundAsset!,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
+            ),
+          if (t.night) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(.35, -.72),
+                  radius: 1.18,
+                  colors: [
+                    NightPalette.lavender.withValues(alpha: .22),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+            const NightSparkles(count: 26),
+          ],
+          child,
+        ],
+      ),
     );
   }
 }

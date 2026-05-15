@@ -14,6 +14,7 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
   @override
   Widget build(BuildContext context) {
     final app = ref.watch(appStateProvider);
+    final t = app.theme;
     final songs = app.songs;
     if (selected == null && songs.isNotEmpty) selected = songs.first;
     if (selected != null && !songs.any((s) => s.id == selected!.id)) {
@@ -40,18 +41,26 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
       fit: StackFit.expand,
       children: [
         Image.asset(
-          'assets/images/Background_image.png',
+          t.night
+              ? 'assets/images/Background_Image_Malam.png'
+              : 'assets/images/Background_image.png',
           fit: BoxFit.cover,
           alignment: Alignment.topCenter,
         ),
         DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                Colors.white.withValues(alpha: .04),
-                const Color(0xffF7EAFF).withValues(alpha: .62),
-                Colors.white.withValues(alpha: .88),
-              ],
+              colors: t.night
+                  ? [
+                      NightPalette.midnight.withValues(alpha: .08),
+                      NightPalette.purple.withValues(alpha: .55),
+                      NightPalette.midnight.withValues(alpha: .86),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: .04),
+                      const Color(0xffF7EAFF).withValues(alpha: .62),
+                      Colors.white.withValues(alpha: .88),
+                    ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
@@ -68,10 +77,10 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
               i.isEven ? Icons.music_note_rounded : Icons.auto_awesome_rounded,
               color: [
                 const Color(0xffFF70B7),
-                const Color(0xff8B55F6),
-                const Color(0xffFFD34D),
-                const Color(0xff33CFEA),
-              ][i % 4].withValues(alpha: .70),
+                t.night ? NightPalette.lavender : const Color(0xff8B55F6),
+                NightPalette.gold,
+                NightPalette.cyan,
+              ][i % 4].withValues(alpha: t.night ? .55 : .70),
               size: i.isEven ? 22 : 13,
             ),
           );
@@ -175,6 +184,7 @@ class _SongsHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     final tablet = MediaQuery.sizeOf(context).width >= 760;
     return SizedBox(
       height: tablet ? 286 : 258,
@@ -182,7 +192,24 @@ class _SongsHero extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Positioned.fill(
-            child: ClipRRect(borderRadius: BorderRadius.circular(36)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(36),
+              child: t.night
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        DecoratedBox(
+                          decoration: nightGlassDecoration(
+                            borderColor: NightPalette.lavender,
+                            radius: 36,
+                            opacity: .46,
+                          ),
+                        ),
+                        const NightSparkles(count: 12, gold: true),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ),
           Positioned(
             left: 18,
@@ -250,6 +277,7 @@ class _SongSearchAndFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     final cats = ['Semua', 'Populer', 'Terbaru', 'Favorit'];
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -275,18 +303,23 @@ class _SongSearchAndFilters extends StatelessWidget {
         if (wide) {
           return Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: .92),
-              borderRadius: BorderRadius.circular(34),
-              border: Border.all(color: Colors.white, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                  color: const Color(0xff7AAED3).withValues(alpha: .16),
-                ),
-              ],
-            ),
+            decoration: t.night
+                ? nightGlassDecoration(
+                    borderColor: NightPalette.cyan,
+                    radius: 34,
+                  )
+                : BoxDecoration(
+                    color: Colors.white.withValues(alpha: .92),
+                    borderRadius: BorderRadius.circular(34),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        blurRadius: 18,
+                        offset: const Offset(0, 10),
+                        color: const Color(0xff7AAED3).withValues(alpha: .16),
+                      ),
+                    ],
+                  ),
             child: Row(
               children: [
                 Expanded(flex: 4, child: search),
@@ -415,19 +448,22 @@ class _NowPlayingVideo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .92),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-            color: const Color(0xff8B55F6).withValues(alpha: .14),
-          ),
-        ],
-      ),
+      decoration: t.night
+          ? nightGlassDecoration(borderColor: NightPalette.lavender)
+          : BoxDecoration(
+              color: Colors.white.withValues(alpha: .92),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 22,
+                  offset: const Offset(0, 12),
+                  color: const Color(0xff8B55F6).withValues(alpha: .14),
+                ),
+              ],
+            ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: SongPlayer(song: song),
@@ -455,6 +491,7 @@ class _PremiumSongCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final thumb = youtubeThumb(song.videoUrl);
+    final t = _themeOf(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -463,19 +500,24 @@ class _PremiumSongCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: active ? 1 : .94),
+            color: t.night
+                ? NightPalette.surface.withValues(alpha: active ? .82 : .66)
+                : Colors.white.withValues(alpha: active ? 1 : .94),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: active ? const Color(0xff8B55F6) : Colors.white,
+              color: active
+                  ? (t.night ? NightPalette.cyan : const Color(0xff8B55F6))
+                  : (t.night
+                        ? NightPalette.lavender.withValues(alpha: .20)
+                        : Colors.white),
               width: active ? 2.5 : 1.5,
             ),
             boxShadow: [
               BoxShadow(
                 blurRadius: active ? 22 : 14,
                 offset: const Offset(0, 9),
-                color: const Color(
-                  0xff8B55F6,
-                ).withValues(alpha: active ? .22 : .10),
+                color: (t.night ? NightPalette.cyan : const Color(0xff8B55F6))
+                    .withValues(alpha: active ? .26 : .10),
               ),
             ],
           ),
@@ -492,8 +534,10 @@ class _PremiumSongCard extends StatelessWidget {
                       song.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xff252A70),
+                      style: TextStyle(
+                        color: t.night
+                            ? NightPalette.text
+                            : const Color(0xff252A70),
                         fontSize: 17,
                         fontWeight: FontWeight.w900,
                         height: 1.05,
@@ -504,8 +548,10 @@ class _PremiumSongCard extends StatelessWidget {
                       song.fileName ?? 'Lagu Anak',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xff74799E),
+                      style: TextStyle(
+                        color: t.night
+                            ? NightPalette.muted
+                            : const Color(0xff74799E),
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
                       ),
@@ -654,23 +700,30 @@ class _SongSearchBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .94),
+        color: t.night
+            ? NightPalette.surface.withValues(alpha: .72)
+            : Colors.white.withValues(alpha: .94),
         borderRadius: BorderRadius.circular(999),
         boxShadow: [
           BoxShadow(
             blurRadius: 16,
             offset: const Offset(0, 8),
-            color: const Color(0xff7AAED3).withValues(alpha: .16),
+            color: (t.night ? NightPalette.cyan : const Color(0xff7AAED3))
+                .withValues(alpha: .16),
           ),
         ],
       ),
       child: TextField(
         onChanged: onChanged,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           hintText: 'Cari lagu anak...',
-          prefixIcon: Icon(Icons.search_rounded, color: Color(0xff6D6F98)),
+          prefixIcon: Icon(
+            Icons.search_rounded,
+            color: t.night ? NightPalette.cyan : const Color(0xff6D6F98),
+          ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 15),
         ),
@@ -691,6 +744,7 @@ class _SongFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     final icon = switch (label) {
       'Populer' => Icons.star_rounded,
       'Terbaru' => Icons.schedule_rounded,
@@ -704,15 +758,23 @@ class _SongFilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         decoration: BoxDecoration(
           color: active
-              ? const Color(0xff9B5CF6)
-              : Colors.white.withValues(alpha: .94),
+              ? (t.night ? NightPalette.lavender : const Color(0xff9B5CF6))
+              : (t.night
+                    ? NightPalette.surface.withValues(alpha: .68)
+                    : Colors.white.withValues(alpha: .94)),
           borderRadius: BorderRadius.circular(999),
           boxShadow: [
             BoxShadow(
               blurRadius: active ? 18 : 10,
               offset: const Offset(0, 8),
               color:
-                  (active ? const Color(0xff9B5CF6) : const Color(0xff7AAED3))
+                  (active
+                          ? (t.night
+                                ? NightPalette.cyan
+                                : const Color(0xff9B5CF6))
+                          : (t.night
+                                ? NightPalette.lavender
+                                : const Color(0xff7AAED3)))
                       .withValues(alpha: active ? .28 : .12),
             ),
           ],
@@ -722,14 +784,18 @@ class _SongFilterChip extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: active ? Colors.white : const Color(0xff8B55F6),
+              color: active
+                  ? Colors.white
+                  : (t.night ? NightPalette.cyan : const Color(0xff8B55F6)),
               size: 20,
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: active ? Colors.white : const Color(0xff353877),
+                color: active
+                    ? Colors.white
+                    : (t.night ? NightPalette.text : const Color(0xff353877)),
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -800,6 +866,7 @@ class _SongSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Row(
       children: [
         const Icon(
@@ -808,11 +875,11 @@ class _SongSectionHeader extends StatelessWidget {
           size: 28,
         ),
         const SizedBox(width: 8),
-        const Expanded(
+        Expanded(
           child: Text(
             'Daftar Lagu Populer',
             style: TextStyle(
-              color: Color(0xff272B6F),
+              color: t.night ? NightPalette.text : const Color(0xff272B6F),
               fontSize: 21,
               fontWeight: FontWeight.w900,
             ),
@@ -839,10 +906,13 @@ class _SongEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = _themeOf(context);
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .94),
+        color: t.night
+            ? NightPalette.surface.withValues(alpha: .72)
+            : Colors.white.withValues(alpha: .94),
         borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
@@ -854,8 +924,8 @@ class _SongEmptyState extends StatelessWidget {
                 ? 'Lagu tidak ditemukan.'
                 : 'Belum ada video lagu. Pengajar bisa upload dari dashboard.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xff4D5179),
+            style: TextStyle(
+              color: t.night ? NightPalette.text : const Color(0xff4D5179),
               fontSize: 14,
               fontWeight: FontWeight.w900,
             ),

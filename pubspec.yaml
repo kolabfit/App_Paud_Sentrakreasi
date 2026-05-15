@@ -81,6 +81,9 @@ flutter:
     - family: Baloo2
       fonts:
         - asset: assets/fonts/Baloo2-VariableFont_wght.ttf
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-VariableFont_wght.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:
