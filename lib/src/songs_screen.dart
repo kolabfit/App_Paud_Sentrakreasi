@@ -7,6 +7,7 @@ class SongsScreen extends ConsumerStatefulWidget {
 }
 
 class _SongsScreenState extends ConsumerState<SongsScreen> {
+  static const double _playerBottomOffset = 82;
   SongItem? selected;
   String query = '';
   String category = 'Semua';
@@ -95,7 +96,7 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                   tablet ? 28 : 18,
                   18,
                   tablet ? 28 : 18,
-                  selected == null ? 126 : 250,
+                  selected == null ? 126 : 196,
                 ),
                 children: [
                   _SongsHero(app: app),
@@ -108,10 +109,6 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
                   ),
                   const SizedBox(height: 16),
                   _SingModeCard(onTap: () => Feedback.forTap(context)),
-                  if (selected != null) ...[
-                    const SizedBox(height: 16),
-                    _NowPlayingVideo(song: selected!),
-                  ],
                   const SizedBox(height: 18),
                   _SongSectionHeader(count: visibleSongs.length),
                   const SizedBox(height: 12),
@@ -165,11 +162,33 @@ class _SongsScreenState extends ConsumerState<SongsScreen> {
           Positioned(
             left: tablet ? 28 : 18,
             right: tablet ? 28 : 18,
-            bottom: 106,
+            bottom: _playerBottomOffset,
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: tablet ? 980 : 520),
-                child: _MiniMusicPlayer(song: selected!),
+                child: _MiniMusicPlayer(
+                  song: selected!,
+                  canSkip: songs.length > 1,
+                  onPrevious: () {
+                    if (songs.length < 2 || selected == null) return;
+                    final currentIndex = songs.indexWhere(
+                      (item) => item.id == selected!.id,
+                    );
+                    final safeIndex = currentIndex < 0 ? 0 : currentIndex;
+                    final prevIndex =
+                        (safeIndex - 1 + songs.length) % songs.length;
+                    setState(() => selected = songs[prevIndex]);
+                  },
+                  onNext: () {
+                    if (songs.length < 2 || selected == null) return;
+                    final currentIndex = songs.indexWhere(
+                      (item) => item.id == selected!.id,
+                    );
+                    final safeIndex = currentIndex < 0 ? 0 : currentIndex;
+                    final nextIndex = (safeIndex + 1) % songs.length;
+                    setState(() => selected = songs[nextIndex]);
+                  },
+                ),
               ),
             ),
           ),
@@ -320,89 +339,11 @@ class _SingModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mobile = MediaQuery.sizeOf(context).width < 390;
-    final leadMic = Image.asset(
-      'assets/images/Mic.png',
-      width: mobile ? 72 : 88,
-      fit: BoxFit.contain,
-    );
-    final sideBox = Image.asset(
-      'assets/images/box_musik.png',
-      width: mobile ? 88 : 116,
-      height: mobile ? 80 : 104,
-      fit: BoxFit.contain,
-    );
-    final body = Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            'Mode Nyanyi Seru',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: mobile ? 19 : 22,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            'Belajar lebih menyenangkan dengan suara!',
-            maxLines: mobile ? 3 : 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: mobile ? 12 : 13,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 10,
-            children: [
-              const _MusicWave(color: Colors.white),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Ayo Coba',
-                      style: TextStyle(
-                        color: Color(0xffB14DDF),
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: Color(0xffB14DDF)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
     return GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minHeight: 150),
-        padding: EdgeInsets.fromLTRB(
-          mobile ? 14 : 18,
-          18,
-          mobile ? 14 : 16,
-          16,
-        ),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
           gradient: const LinearGradient(
@@ -419,58 +360,115 @@ class _SingModeCard extends StatelessWidget {
             ),
           ],
         ),
-        child: mobile
-            ? Column(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+            final compact =
+                constraints.maxWidth < 430 ||
+                (isAndroid && constraints.maxWidth < 560);
+            final leadMic = Image.asset(
+              'assets/images/Mic.png',
+              width: compact ? 72 : 88,
+              fit: BoxFit.contain,
+            );
+            final sideBox = Image.asset(
+              'assets/images/box_musik.png',
+              width: compact ? 88 : 116,
+              height: compact ? 80 : 104,
+              fit: BoxFit.contain,
+            );
+            final body = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Mode Nyanyi Seru',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 19 : 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  'Belajar lebih menyenangkan dengan suara!',
+                  maxLines: compact ? 3 : 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: compact ? 12 : 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                SizedBox(height: compact ? 16 : 14),
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    const _MusicWave(color: Colors.white),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Ayo Coba',
+                            style: TextStyle(
+                              color: Color(0xffB14DDF),
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xffB14DDF),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+            if (compact) {
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [leadMic, const SizedBox(width: 12), body],
+                    children: [
+                      leadMic,
+                      const SizedBox(width: 12),
+                      Expanded(child: body),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Align(alignment: Alignment.centerRight, child: sideBox),
                 ],
-              )
-            : Row(
-                children: [
-                  leadMic,
-                  const SizedBox(width: 16),
-                  body,
-                  const SizedBox(width: 6),
-                  sideBox,
-                ],
-              ),
-      ).animate().fadeIn(duration: 330.ms).slideY(begin: .06),
-    );
-  }
-}
-
-class _NowPlayingVideo extends StatelessWidget {
-  const _NowPlayingVideo({required this.song});
-  final SongItem song;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = _themeOf(context);
-    return Container(
-      decoration: t.night
-          ? nightGlassDecoration(borderColor: NightPalette.lavender)
-          : BoxDecoration(
-              color: Colors.white.withValues(alpha: .92),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 22,
-                  offset: const Offset(0, 12),
-                  color: const Color(0xff8B55F6).withValues(alpha: .14),
-                ),
+              );
+            }
+            return Row(
+              children: [
+                leadMic,
+                const SizedBox(width: 16),
+                Expanded(child: body),
+                const SizedBox(width: 16),
+                sideBox,
               ],
-            ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: SongPlayer(song: song),
-      ),
+            );
+          },
+        ),
+      ).animate().fadeIn(duration: 330.ms).slideY(begin: .06),
     );
   }
 }
@@ -583,65 +581,131 @@ class _PremiumSongCard extends StatelessWidget {
 }
 
 class _MiniMusicPlayer extends StatefulWidget {
-  const _MiniMusicPlayer({required this.song});
+  const _MiniMusicPlayer({
+    required this.song,
+    required this.canSkip,
+    required this.onPrevious,
+    required this.onNext,
+  });
   final SongItem song;
+  final bool canSkip;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
 
   @override
   State<_MiniMusicPlayer> createState() => _MiniMusicPlayerState();
 }
 
 class _MiniMusicPlayerState extends State<_MiniMusicPlayer> {
-  VideoPlayerController? _controller;
-  VoidCallback? _videoListener;
+  final AudioPlayer _player = AudioPlayer();
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+  bool _playing = false;
+  bool _loading = true;
+  Object? _loadError;
+  int _loadToken = 0;
+  StreamSubscription<Duration?>? _durationSub;
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<PlayerState>? _playerStateSub;
 
   @override
   void initState() {
     super.initState();
-    _initController();
+    _durationSub = _player.durationStream.listen((duration) {
+      if (!mounted) return;
+      setState(() => _duration = duration ?? Duration.zero);
+    });
+    _positionSub = _player.positionStream.listen((position) {
+      if (!mounted) return;
+      setState(() => _position = position);
+    });
+    _playerStateSub = _player.playerStateStream.listen((state) {
+      if (!mounted) return;
+      if (state.processingState == ProcessingState.completed) {
+        widget.onNext();
+        return;
+      }
+      setState(() {
+        _playing = state.playing;
+        _loading =
+            state.processingState == ProcessingState.loading ||
+            state.processingState == ProcessingState.buffering;
+      });
+    });
+    _loadSong();
   }
 
   @override
   void didUpdateWidget(covariant _MiniMusicPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.song.videoUrl != widget.song.videoUrl) {
-      _controller?.dispose();
-      _controller = null;
-      _initController();
+      _loadSong(autoplay: _playing);
     }
   }
 
-  Future<void> _initController() async {
+  Future<void> _loadSong({bool autoplay = false}) async {
+    final token = ++_loadToken;
     final source = widget.song.videoUrl.trim();
-    if (source.isEmpty) return;
-    if (MediaSourceHelper.isDataUri(source)) {
-      final persisted = await LocalStorageService.instance.persistDataUri(
-        source,
-        bucket: StorageBucket.songVideos,
-        fileName: 'mini_song_${DateTime.now().millisecondsSinceEpoch}.mp4',
-      );
-      if (!mounted || persisted == null) return;
-      _controller = VideoPlayerController.file(File(persisted));
-    } else if (MediaSourceHelper.isLocalFilePath(source)) {
-      _controller = VideoPlayerController.file(File(source));
-    } else if (MediaSourceHelper.isAssetPath(source)) {
-      _controller = VideoPlayerController.asset(source);
-    } else {
-      _controller = VideoPlayerController.networkUrl(Uri.parse(source));
+    await _player.stop();
+    if (!mounted) return;
+    setState(() {
+      _duration = Duration.zero;
+      _position = Duration.zero;
+      _playing = false;
+      _loading = true;
+      _loadError = null;
+    });
+    if (source.isEmpty) {
+      if (!mounted || token != _loadToken) return;
+      setState(() => _loading = false);
+      return;
     }
-    await _controller?.initialize();
-    _videoListener = () {
-      if (mounted) setState(() {});
-    };
-    _controller?.addListener(_videoListener!);
-    if (mounted) setState(() {});
+    try {
+      if (MediaSourceHelper.isDataUri(source)) {
+        if (kIsWeb) {
+          await _player.setUrl(source);
+        } else {
+          final persisted = await LocalStorageService.instance.persistDataUri(
+            source,
+            bucket: StorageBucket.songVideos,
+            fileName: 'mini_song_${DateTime.now().millisecondsSinceEpoch}.mp4',
+          );
+          if (persisted == null) throw Exception('Media tidak bisa diputar.');
+          await _player.setFilePath(persisted);
+        }
+      } else if (MediaSourceHelper.isLocalFilePath(source)) {
+        await _player.setFilePath(source);
+      } else if (MediaSourceHelper.isAssetPath(source)) {
+        await _player.setAsset(source);
+      } else {
+        await _player.setUrl(source);
+      }
+      if (!mounted || token != _loadToken) return;
+      setState(() {
+        _duration = _player.duration ?? Duration.zero;
+        _position = _player.position;
+        _loading = false;
+        _loadError = null;
+      });
+      if (autoplay) {
+        await _player.play();
+      }
+    } catch (error) {
+      if (!mounted || token != _loadToken) return;
+      setState(() {
+        _loading = false;
+        _playing = false;
+        _loadError = error;
+      });
+    }
   }
 
   @override
   void dispose() {
-    if (_videoListener != null) {
-      _controller?.removeListener(_videoListener!);
-    }
-    _controller?.dispose();
+    _durationSub?.cancel();
+    _positionSub?.cancel();
+    _playerStateSub?.cancel();
+    _player.dispose();
     super.dispose();
   }
 
@@ -649,15 +713,15 @@ class _MiniMusicPlayerState extends State<_MiniMusicPlayer> {
   Widget build(BuildContext context) {
     final song = widget.song;
     final thumb = youtubeThumb(song.videoUrl);
-    final c = _controller;
-    final ready = c != null && c.value.isInitialized;
-    final playing = ready && c.value.isPlaying;
-    final duration = ready ? c.value.duration : Duration.zero;
-    final position = ready ? c.value.position : Duration.zero;
+    final duration = _duration;
+    final position = _position > duration && duration > Duration.zero
+        ? duration
+        : _position;
     final progress = duration.inMilliseconds <= 0
         ? 0.0
         : (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
     final mobile = MediaQuery.sizeOf(context).width < 460;
+    final ready = !_loading && _loadError == null;
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: BackdropFilter(
@@ -692,16 +756,21 @@ class _MiniMusicPlayerState extends State<_MiniMusicPlayer> {
                         Expanded(child: _MiniSongMeta(song: song)),
                         const SizedBox(width: 10),
                         _MiniControl(
-                          icon: playing
+                          icon: Icons.skip_previous_rounded,
+                          onTap: widget.canSkip ? widget.onPrevious : null,
+                        ),
+                        const SizedBox(width: 8),
+                        _MiniControl(
+                          icon: _playing
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                           main: true,
-                          onTap: ready
-                              ? () {
-                                  playing ? c.pause() : c.play();
-                                  setState(() {});
-                                }
-                              : null,
+                          onTap: ready ? _togglePlayback : null,
+                        ),
+                        const SizedBox(width: 8),
+                        _MiniControl(
+                          icon: Icons.skip_next_rounded,
+                          onTap: widget.canSkip ? widget.onNext : null,
                         ),
                       ],
                     ),
@@ -734,48 +803,36 @@ class _MiniMusicPlayerState extends State<_MiniMusicPlayer> {
                     ),
                     const SizedBox(width: 10),
                     _MiniControl(
-                      icon: Icons.replay_10_rounded,
-                      onTap: ready
-                          ? () {
-                              final target =
-                                  position - const Duration(seconds: 10);
-                              c.seekTo(
-                                target < Duration.zero ? Duration.zero : target,
-                              );
-                              setState(() {});
-                            }
-                          : null,
+                      icon: Icons.skip_previous_rounded,
+                      onTap: widget.canSkip ? widget.onPrevious : null,
                     ),
                     const SizedBox(width: 8),
                     _MiniControl(
-                      icon: playing
+                      icon: _playing
                           ? Icons.pause_rounded
                           : Icons.play_arrow_rounded,
                       main: true,
-                      onTap: ready
-                          ? () {
-                              playing ? c.pause() : c.play();
-                              setState(() {});
-                            }
-                          : null,
+                      onTap: ready ? _togglePlayback : null,
                     ),
                     const SizedBox(width: 8),
                     _MiniControl(
-                      icon: Icons.forward_10_rounded,
-                      onTap: ready
-                          ? () {
-                              final target =
-                                  position + const Duration(seconds: 10);
-                              c.seekTo(target > duration ? duration : target);
-                              setState(() {});
-                            }
-                          : null,
+                      icon: Icons.skip_next_rounded,
+                      onTap: widget.canSkip ? widget.onNext : null,
                     ),
                   ],
                 ),
         ),
       ),
     );
+  }
+
+  Future<void> _togglePlayback() async {
+    if (_loading || _loadError != null) return;
+    if (_playing) {
+      await _player.pause();
+    } else {
+      await _player.play();
+    }
   }
 }
 

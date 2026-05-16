@@ -323,6 +323,262 @@ class LocalDatabase {
         .toList();
   }
 
+  Future<List<LetterGroup>> loadLetters() async {
+    await ensureReady();
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString(_webLettersKey);
+      if (raw == null || raw.isEmpty) return [...defaultLettersData];
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        return LetterGroup(
+          map['letter'] as String,
+          [
+            LearningObject(
+              map['example'] as String? ?? '',
+              map['img'] as String? ?? DefaultLearningCatalog.hurufPlaceholderAsset,
+              map['category'] as String? ?? 'contoh',
+            ),
+          ],
+          map['id'] as String? ?? '',
+        );
+      }).toList();
+    }
+    final items = await _materialRepository.loadByCategory(
+      LearningCategories.huruf,
+    );
+    if (items.isEmpty) return [...defaultLettersData];
+    return items
+        .map(
+          (item) => LetterGroup(
+            _normalizeLetterTitle(item.title),
+            [
+              LearningObject(
+                item.subcategory.isEmpty ? 'Contoh' : item.subcategory,
+                item.imagePath.isEmpty
+                    ? defaultMediaFallback(LearningCategories.huruf)
+                    : item.imagePath,
+                'contoh',
+              ),
+            ],
+            item.materialId,
+          ),
+        )
+        .toList();
+  }
+
+  Future<LetterGroup> saveLetter({
+    required String letter,
+    required String example,
+    required String imagePath,
+    String? existingId,
+  }) async {
+    await ensureReady();
+    final normalizedLetter = letter.trim().toUpperCase();
+    final normalizedExample = example.trim();
+    final materialId =
+        existingId?.trim().isNotEmpty == true
+            ? existingId!.trim()
+            : 'huruf_${normalizedLetter.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}';
+    if (kIsWeb) {
+      final items = await loadLetters();
+      final next = LetterGroup(
+        normalizedLetter,
+        [LearningObject(normalizedExample, imagePath, 'contoh')],
+        materialId,
+      );
+      items.removeWhere((item) => item.id == materialId);
+      items.insert(0, next);
+      await _webPrefs!.setString(
+        _webLettersKey,
+        jsonEncode(
+          items
+              .map((item) {
+                final sample = item.objects.isEmpty
+                    ? const LearningObject('', '')
+                    : item.objects.first;
+                return {
+                  'id': item.id,
+                  'letter': item.letter,
+                  'example': sample.name,
+                  'img': sample.img,
+                  'category': sample.category,
+                };
+              })
+              .toList(),
+        ),
+      );
+      return next;
+    }
+    final entity = await _materialRepository.upsertMaterial(
+      materialId: materialId,
+      category: LearningCategories.huruf,
+      title: normalizedLetter,
+      subcategory: normalizedExample,
+      imagePath: imagePath,
+    );
+    return LetterGroup(
+      _normalizeLetterTitle(entity.title),
+      [
+        LearningObject(
+          entity.subcategory.isEmpty ? 'Contoh' : entity.subcategory,
+          entity.imagePath,
+          'contoh',
+        ),
+      ],
+      entity.materialId,
+    );
+  }
+
+  Future<void> removeLetter(LetterGroup item) async {
+    await ensureReady();
+    final imagePath = item.objects.isEmpty ? '' : item.objects.first.img;
+    if (kIsWeb) {
+      final items = await loadLetters();
+      items.removeWhere((entry) => entry.id == item.id || entry.letter == item.letter);
+      await _webPrefs!.setString(
+        _webLettersKey,
+        jsonEncode(
+          items
+              .map((entry) {
+                final sample = entry.objects.isEmpty
+                    ? const LearningObject('', '')
+                    : entry.objects.first;
+                return {
+                  'id': entry.id,
+                  'letter': entry.letter,
+                  'example': sample.name,
+                  'img': sample.img,
+                  'category': sample.category,
+                };
+              })
+              .toList(),
+        ),
+      );
+      return;
+    }
+    if (item.id.isNotEmpty) {
+      await _materialRepository.deleteMaterialById(item.id);
+    }
+    if (MediaSourceHelper.isLocalFilePath(imagePath)) {
+      await _storageService.deleteFile(imagePath);
+    }
+  }
+
+  Future<List<NumberItem>> loadNumbers() async {
+    await ensureReady();
+    if (kIsWeb) {
+      final raw = _webPrefs!.getString(_webNumbersKey);
+      if (raw == null || raw.isEmpty) return [...defaultNumbersData];
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      return decoded.map((item) {
+        final map = Map<String, dynamic>.from(item as Map);
+        return NumberItem(
+          map['number'] as String,
+          map['name'] as String? ?? '',
+          map['img'] as String? ?? DefaultLearningCatalog.angkaPlaceholderAsset,
+          map['id'] as String? ?? '',
+        );
+      }).toList();
+    }
+    final items = await _materialRepository.loadByCategory(
+      LearningCategories.angka,
+    );
+    if (items.isEmpty) return [...defaultNumbersData];
+    return items
+        .map(
+          (item) => NumberItem(
+            _normalizeNumberTitle(item.title),
+            item.subcategory.isEmpty ? item.title : item.subcategory,
+            item.imagePath.isEmpty
+                ? defaultMediaFallback(LearningCategories.angka)
+                : item.imagePath,
+            item.materialId,
+          ),
+        )
+        .toList();
+  }
+
+  Future<NumberItem> saveNumber({
+    required String number,
+    required String name,
+    required String imagePath,
+    String? existingId,
+  }) async {
+    await ensureReady();
+    final normalizedNumber = number.trim();
+    final normalizedName = name.trim();
+    final materialId =
+        existingId?.trim().isNotEmpty == true
+            ? existingId!.trim()
+            : 'angka_${normalizedNumber}_${DateTime.now().millisecondsSinceEpoch}';
+    if (kIsWeb) {
+      final items = await loadNumbers();
+      final next = NumberItem(normalizedNumber, normalizedName, imagePath, materialId);
+      items.removeWhere((item) => item.id == materialId);
+      items.insert(0, next);
+      await _webPrefs!.setString(
+        _webNumbersKey,
+        jsonEncode(
+          items
+              .map(
+                (item) => {
+                  'id': item.id,
+                  'number': item.number,
+                  'name': item.name,
+                  'img': item.img,
+                },
+              )
+              .toList(),
+        ),
+      );
+      return next;
+    }
+    final entity = await _materialRepository.upsertMaterial(
+      materialId: materialId,
+      category: LearningCategories.angka,
+      title: normalizedNumber,
+      subcategory: normalizedName,
+      imagePath: imagePath,
+    );
+    return NumberItem(
+      _normalizeNumberTitle(entity.title),
+      entity.subcategory.isEmpty ? entity.title : entity.subcategory,
+      entity.imagePath,
+      entity.materialId,
+    );
+  }
+
+  Future<void> removeNumber(NumberItem item) async {
+    await ensureReady();
+    if (kIsWeb) {
+      final items = await loadNumbers();
+      items.removeWhere((entry) => entry.id == item.id || entry.number == item.number);
+      await _webPrefs!.setString(
+        _webNumbersKey,
+        jsonEncode(
+          items
+              .map(
+                (entry) => {
+                  'id': entry.id,
+                  'number': entry.number,
+                  'name': entry.name,
+                  'img': entry.img,
+                },
+              )
+              .toList(),
+        ),
+      );
+      return;
+    }
+    if (item.id.isNotEmpty) {
+      await _materialRepository.deleteMaterialById(item.id);
+    }
+    if (MediaSourceHelper.isLocalFilePath(item.img)) {
+      await _storageService.deleteFile(item.img);
+    }
+  }
+
   Future<void> saveSongs(List<SongItem> songs) async {
     await ensureReady();
     if (kIsWeb) {
@@ -517,6 +773,14 @@ class LocalDatabase {
     }
     await _userRepository.saveFavoriteIds(username, ids);
     await _materialRepository.setFavoriteState(ids);
+  }
+
+  Future<int> countAccounts() async {
+    await ensureReady();
+    if (kIsWeb) {
+      return _webPrefs!.getKeys().where((key) => key.startsWith('web.account.')).length;
+    }
+    return _userRepository.countAccounts();
   }
 
   Future<List<String>> checkNewUnlocks({
@@ -744,6 +1008,16 @@ class LocalDatabase {
   String _hashPassword(String password) =>
       sha256.convert(utf8.encode(password)).toString();
 
+  String _normalizeLetterTitle(String value) {
+    final text = value.trim();
+    return text.replaceFirst(RegExp(r'^huruf\s+', caseSensitive: false), '');
+  }
+
+  String _normalizeNumberTitle(String value) {
+    final text = value.trim();
+    return text.replaceFirst(RegExp(r'^angka\s+', caseSensitive: false), '');
+  }
+
   String _webAccountKey(String username) =>
       'web.account.${username.toLowerCase().trim()}';
   String _webPasswordKey(String username) =>
@@ -757,4 +1031,6 @@ class LocalDatabase {
   static const _webCurrentUserKey = 'web.current_user';
   static const _webSongsKey = 'web.songs';
   static const _webObjectsKey = 'web.objects';
+  static const _webLettersKey = 'web.letters';
+  static const _webNumbersKey = 'web.numbers';
 }

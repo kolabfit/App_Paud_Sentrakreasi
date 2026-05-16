@@ -111,6 +111,32 @@ class MaterialRepository {
     return entity;
   }
 
+  Future<LearningMaterialEntity> upsertMaterial({
+    required String materialId,
+    required String category,
+    required String title,
+    required String imagePath,
+    String subcategory = '',
+    String audioPath = '',
+    String fileName = '',
+  }) async {
+    final existing = await _database.read(
+      (isar) => isar.learningMaterialEntitys.getByMaterialId(materialId),
+    );
+    final entity = existing ?? LearningMaterialEntity()..materialId = materialId;
+    entity
+      ..category = category
+      ..title = title
+      ..subcategory = subcategory
+      ..imagePath = imagePath
+      ..audioPath = audioPath
+      ..fileName = fileName
+      ..createdAt = existing?.createdAt ?? DateTime.now()
+      ..updatedAt = DateTime.now();
+    await _database.write((isar) => isar.learningMaterialEntitys.put(entity));
+    return entity;
+  }
+
   Future<void> deleteMaterialById(String materialId) async {
     await _database.write((isar) async {
       final entity = await isar.learningMaterialEntitys

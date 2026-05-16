@@ -4,7 +4,7 @@ const _hurufAsset = DefaultLearningCatalog.hurufPlaceholderAsset;
 const _angkaAsset = DefaultLearningCatalog.angkaPlaceholderAsset;
 const _bendaAsset = DefaultLearningCatalog.bendaPlaceholderAsset;
 
-final lettersData = [
+final defaultLettersData = [
   LetterGroup('A', [LearningObject('Apel', _hurufAsset, 'buah')]),
   LetterGroup('B', [LearningObject('Bola', _hurufAsset, 'mainan')]),
   LetterGroup('C', [LearningObject('Cicak', _hurufAsset, 'hewan')]),
@@ -33,7 +33,7 @@ final lettersData = [
   LetterGroup('Z', [LearningObject('Zebra', _hurufAsset, 'hewan')]),
 ];
 
-const numbersData = [
+const defaultNumbersData = [
   NumberItem('1', 'Satu', _angkaAsset),
   NumberItem('2', 'Dua', _angkaAsset),
   NumberItem('3', 'Tiga', _angkaAsset),

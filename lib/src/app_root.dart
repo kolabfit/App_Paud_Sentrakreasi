@@ -128,6 +128,8 @@ class KhoirQuestApp extends ConsumerWidget {
           ? const OnboardingScreen()
           : app.role == null
           ? const AuthScreen()
+          : app.role == Role.teacher
+          ? const TeacherDashboard()
           : const ShellScreen(),
     );
   }

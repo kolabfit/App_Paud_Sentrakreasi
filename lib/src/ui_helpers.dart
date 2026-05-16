@@ -256,13 +256,13 @@ Challenge randomChallenge([String? category]) {
         _ => 'iqra',
       };
   if (bucket == 'huruf') {
-    final x = lettersData[r.nextInt(lettersData.length)];
+    final x = defaultLettersData[r.nextInt(defaultLettersData.length)];
     return Challenge('membaca', 'Sebutkan huruf ini', x.letter, null, [
       x.letter,
     ]);
   }
   if (bucket == 'angka') {
-    final x = numbersData[r.nextInt(numbersData.length)];
+    final x = defaultNumbersData[r.nextInt(defaultNumbersData.length)];
     return Challenge('angka', 'Sebutkan angka ini', x.number, x.img, [
       x.name,
       x.number,

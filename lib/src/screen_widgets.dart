@@ -650,6 +650,7 @@ class AppField extends StatelessWidget {
     required this.icon,
     this.hint,
     this.obscure = false,
+    this.readOnly = false,
     this.suffix,
     super.key,
   });
@@ -658,6 +659,7 @@ class AppField extends StatelessWidget {
   final IconData icon;
   final String? hint;
   final bool obscure;
+  final bool readOnly;
   final Widget? suffix;
 
   @override
@@ -668,6 +670,7 @@ class AppField extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: obscure,
+        readOnly: readOnly,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,

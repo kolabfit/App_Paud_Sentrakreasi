@@ -6,18 +6,12 @@ class ShellScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appStateProvider);
-    final teacherHome = app.role == Role.teacher;
-    Widget body;
-    if (teacherHome && app.tab == TabItem.akun) {
-      body = const TeacherDashboard();
-    } else {
-      body = switch (app.tab) {
-        TabItem.main => const MainMenuScreen(),
-        TabItem.belajar => const BelajarScreen(),
-        TabItem.lagu => const SongsScreen(),
-        TabItem.akun => const AccountScreen(),
-      };
-    }
+    final body = switch (app.tab) {
+      TabItem.main => const MainMenuScreen(),
+      TabItem.belajar => const BelajarScreen(),
+      TabItem.lagu => const SongsScreen(),
+      TabItem.akun => const AccountScreen(),
+    };
     return Scaffold(
       backgroundColor: app.theme.bg,
       extendBody: true,

@@ -221,6 +221,9 @@ class UserRepository {
         : List<String>.from(profile.favoriteMaterialIds);
   }
 
+  Future<int> countAccounts() =>
+      _database.read((isar) => isar.userProfileEntitys.count());
+
   Future<void> saveFavoriteIds(String username, Iterable<String> ids) async {
     final profile = await _profileByUsername(username);
     if (profile == null) return;

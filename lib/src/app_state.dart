@@ -36,6 +36,8 @@ class AppState extends ChangeNotifier {
     'iqra': 0,
   };
 
+  final List<LetterGroup> letters = [...defaultLettersData];
+  final List<NumberItem> numbers = [...defaultNumbersData];
   final List<LearningObject> objects = [...objectsData];
   final List<SongItem> songs = [...songsData];
   final Set<String> favorites = {};
@@ -69,6 +71,14 @@ class AppState extends ChangeNotifier {
     objects
       ..clear()
       ..addAll(await _db.loadObjects());
+    letters
+      ..clear()
+      ..addAll(await _db.loadLetters());
+    _sortLetters();
+    numbers
+      ..clear()
+      ..addAll(await _db.loadNumbers());
+    _sortNumbers();
     songs
       ..clear()
       ..addAll(await _db.loadSongs());
@@ -192,7 +202,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> markHurfSuccess(String letter) async {
     hurfMastered.add(letter);
-    progress['membaca'] = min(100, (hurfMastered.length / 26 * 100).round());
+    progress['membaca'] = min(
+      100,
+      (hurfMastered.length / max(1, letters.length) * 100).round(),
+    );
     stars += 2;
     await _recordHistory(
       materialId: letter,
@@ -206,7 +219,10 @@ class AppState extends ChangeNotifier {
 
   Future<void> markAngkaSuccess(String number) async {
     angkaMastered.add(number);
-    progress['angka'] = min(100, (angkaMastered.length / 10 * 100).round());
+    progress['angka'] = min(
+      100,
+      (angkaMastered.length / max(1, numbers.length) * 100).round(),
+    );
     stars += 2;
     await _recordHistory(
       materialId: number,
@@ -241,9 +257,85 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> removeObject(LearningObject item) async {
+  Future<void> saveLetter({
+    required String letter,
+    required String example,
+    required String imagePath,
+    String? existingId,
+  }) async {
+    final item = await _db.saveLetter(
+      letter: letter,
+      example: example,
+      imagePath: imagePath,
+      existingId: existingId,
+    );
+    letters.removeWhere((entry) => entry.id == item.id);
+    letters.insert(0, item);
+    _sortLetters();
+    notifyListeners();
+  }
+
+  Future<void> removeLetter(LetterGroup item) async {
+    letters.removeWhere((entry) => entry.id == item.id || entry.letter == item.letter);
+    if (hurfMastered.remove(item.letter)) {
+      progress['membaca'] = min(
+        100,
+        (hurfMastered.length / max(1, letters.length) * 100).round(),
+      );
+      await _saveAccount();
+    }
+    await _db.removeLetter(item);
+    notifyListeners();
+  }
+
+  Future<void> saveNumber({
+    required String number,
+    required String name,
+    required String imagePath,
+    String? existingId,
+  }) async {
+    final item = await _db.saveNumber(
+      number: number,
+      name: name,
+      imagePath: imagePath,
+      existingId: existingId,
+    );
+    numbers.removeWhere((entry) => entry.id == item.id);
+    numbers.insert(0, item);
+    _sortNumbers();
+    notifyListeners();
+  }
+
+  void _sortLetters() {
+    letters.sort((a, b) => a.letter.toUpperCase().compareTo(b.letter.toUpperCase()));
+  }
+
+  void _sortNumbers() {
+    numbers.sort((a, b) {
+      final aNum = int.tryParse(a.number) ?? 9999;
+      final bNum = int.tryParse(b.number) ?? 9999;
+      final byValue = aNum.compareTo(bNum);
+      if (byValue != 0) return byValue;
+      return a.number.compareTo(b.number);
+    });
+  }
+
+  Future<void> removeNumber(NumberItem item) async {
+    numbers.removeWhere((entry) => entry.id == item.id || entry.number == item.number);
+    if (angkaMastered.remove(item.number)) {
+      progress['angka'] = min(
+        100,
+        (angkaMastered.length / max(1, numbers.length) * 100).round(),
+      );
+      await _saveAccount();
+    }
+    await _db.removeNumber(item);
+    notifyListeners();
+  }
+
+  Future<void> removeObject(LearningObject item, {bool deleteMedia = true}) async {
     objects.remove(item);
-    if (MediaSourceHelper.isLocalFilePath(item.img)) {
+    if (deleteMedia && MediaSourceHelper.isLocalFilePath(item.img)) {
       await _db.deleteFile(item.img);
     }
     await _db.removeObject(item);
@@ -265,10 +357,10 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> removeSong(SongItem song) async {
+  Future<void> removeSong(SongItem song, {bool deleteMedia = true}) async {
     songs.remove(song);
     favorites.remove(song.id);
-    if (MediaSourceHelper.isLocalFilePath(song.videoUrl)) {
+    if (deleteMedia && MediaSourceHelper.isLocalFilePath(song.videoUrl)) {
       await _db.deleteFile(song.videoUrl);
     }
     await _db.saveSongs(songs);

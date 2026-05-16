@@ -10,9 +10,10 @@ class Challenge {
 }
 
 class LetterGroup {
-  const LetterGroup(this.letter, this.objects);
+  const LetterGroup(this.letter, this.objects, [this.id = '']);
   final String letter;
   final List<LearningObject> objects;
+  final String id;
 }
 
 class LearningObject {
@@ -29,10 +30,11 @@ class LearningObject {
 }
 
 class NumberItem {
-  const NumberItem(this.number, this.name, this.img);
+  const NumberItem(this.number, this.name, this.img, [this.id = '']);
   final String number;
   final String name;
   final String img;
+  final String id;
 }
 
 class IqraItem {

@@ -613,7 +613,7 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
   bool listening = false;
   String heard = '';
   String voiceFeedback = 'Tekan mic pada kartu lalu ucapkan katanya.';
-  String category = 'Semua Huruf';
+  String category = 'Semua';
 
   @override
   void initState() {
@@ -640,16 +640,17 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
     if (seru) {
       return ModeSeruScreen(
         category: 'huruf',
-        title: 'Kuis Huruf Seru',
+        title: 'Kuis Seru',
         onClose: () => setState(() => seru = false),
       );
     }
     final query = search.text.toLowerCase().trim();
-    final filtered = lettersData.where((item) {
+    final letterItems = app.letters;
+    final filtered = letterItems.where((item) {
       final isVowel = 'AIUEO'.contains(item.letter);
       final obj = item.objects.first;
       final categoryOk =
-          category == 'Semua Huruf' ||
+          category == 'Semua' ||
           (category == 'Vokal' && isVowel) ||
           (category == 'Konsonan' && !isVowel);
       final queryOk =
@@ -661,19 +662,19 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
     return _PremiumLearningScaffold(
       titleAsset: 'assets/images/Belajar_huruf.png',
       mascotAsset: 'assets/images/Anak_Belajar_Huruf.png',
-      fallbackTitle: 'Belajar Huruf',
-      subtitle: 'Ayo mengenal huruf A sampai Z!',
+      fallbackTitle: 'Belajar',
+      subtitle: 'Ayo mengenal abjad dan contoh bendanya!',
       accent: const Color(0xffFF8F1F),
       stars: app.stars,
       onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-      chips: const ['Semua Huruf', 'Vokal', 'Konsonan'],
+      chips: const ['Semua', 'Vokal', 'Konsonan'],
       selectedChip: category,
       onChip: (value) => setState(() {
         category = value;
         pageIndex = 0;
       }),
       search: search,
-      searchHint: 'Cari huruf...',
+      searchHint: 'Cari...',
       onSearch: () => setState(() => pageIndex = 0),
       itemCount: filtered.length,
       pageIndex: pageIndex,
@@ -689,7 +690,7 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
         return _PremiumLearningCard(
           color: color,
           title: item.letter,
-          subtitle: 'Huruf ${item.letter}',
+          subtitle: item.letter,
           caption: obj.name,
           imageUrl: obj.img,
           badge: obj.name.toLowerCase(),
@@ -701,7 +702,7 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
           },
           onMic: () => listenForProgress(
             expected: letterPronunciation,
-            successText: 'Pintar! Huruf ${item.letter} cocok.',
+            successText: 'Pintar! ${item.letter} cocok.',
             progressKey: 'membaca',
             amount: 6,
             masteryKey: item.letter,
@@ -806,7 +807,7 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
   bool listening = false;
   String heard = '';
   String voiceFeedback = 'Tekan mic pada kartu lalu ucapkan angkanya.';
-  String category = 'Semua Angka';
+  String category = 'Semua';
 
   @override
   void initState() {
@@ -838,10 +839,11 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
       );
     }
     final query = search.text.toLowerCase().trim();
-    final filtered = numbersData.where((item) {
+    final numberItems = app.numbers;
+    final filtered = numberItems.where((item) {
       final n = int.tryParse(item.number) ?? 0;
       final categoryOk =
-          category == 'Semua Angka' ||
+          category == 'Semua' ||
           (category == 'Ganjil' && n.isOdd) ||
           (category == 'Genap' && n.isEven);
       final queryOk =
@@ -853,19 +855,19 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
     return _PremiumLearningScaffold(
       titleAsset: 'assets/images/Belajar_Angka.png',
       mascotAsset: 'assets/images/Anak_Belajar_Angka.png',
-      fallbackTitle: 'Belajar Angka',
-      subtitle: 'Yuk belajar angka 1 sampai 10!',
+      fallbackTitle: 'Belajar',
+      subtitle: 'Yuk belajar bilangan dengan gambar pilihan pengajar!',
       accent: const Color(0xff4E8BFF),
       stars: app.stars,
       onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-      chips: const ['Semua Angka', 'Ganjil', 'Genap'],
+      chips: const ['Semua', 'Ganjil', 'Genap'],
       selectedChip: category,
       onChip: (value) => setState(() {
         category = value;
         pageIndex = 0;
       }),
       search: search,
-      searchHint: 'Cari angka...',
+      searchHint: 'Cari...',
       onSearch: () => setState(() => pageIndex = 0),
       itemCount: filtered.length,
       pageIndex: pageIndex,
@@ -880,7 +882,7 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
           color: color,
           title: item.number,
           subtitle: item.name,
-          caption: 'Angka ${item.number}',
+          caption: item.number,
           imageUrl: item.img,
           badge: _numberBadge(item.number),
           kind: _PremiumCardKind.number,
@@ -891,7 +893,7 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
           },
           onMic: () => listenForProgress(
             expected: item.name,
-            successText: 'Mantap! Angka ${item.number} benar.',
+            successText: 'Mantap! ${item.number} benar.',
             progressKey: 'angka',
             amount: 7,
             masteryKey: item.number,
