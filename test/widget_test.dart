@@ -1,4 +1,4 @@
-import 'package:belajar_yuk/main.dart';
+import 'package:khoir_quest/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

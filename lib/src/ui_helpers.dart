@@ -238,6 +238,7 @@ String labelForProgress(String key) => switch (key) {
 };
 
 String? youtubeThumb(String url) {
+  if (!MediaSourceHelper.isRemoteUrl(url)) return null;
   final reg = RegExp(r'(?:embed/|v=|youtu\.be/)([A-Za-z0-9_-]{6,})');
   final id = reg.firstMatch(url)?.group(1);
   if (id == null) return null;

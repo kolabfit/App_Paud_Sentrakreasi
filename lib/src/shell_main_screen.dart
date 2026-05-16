@@ -350,30 +350,24 @@ class _HomeHero extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Flexible(
-                            child: Text(
-                              'Halo, $name!',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: tablet ? 28 : 21,
-                                height: 1.04,
-                                fontWeight: FontWeight.w900,
-                                color: dark
-                                    ? NightPalette.text
-                                    : const Color(0xff3A268A),
-                                shadows: [
-                                  Shadow(
-                                    blurRadius: dark ? 18 : 8,
-                                    color: dark
-                                        ? NightPalette.cyan.withValues(
-                                            alpha: .34,
-                                          )
-                                        : Colors.white,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                          Text(
+                            'Halo',
+                            style: TextStyle(
+                              fontSize: tablet ? 28 : 21,
+                              height: 1.04,
+                              fontWeight: FontWeight.w900,
+                              color: dark
+                                  ? NightPalette.text
+                                  : const Color(0xff3A268A),
+                              shadows: [
+                                Shadow(
+                                  blurRadius: dark ? 18 : 8,
+                                  color: dark
+                                      ? NightPalette.cyan.withValues(alpha: .34)
+                                      : Colors.white,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -383,6 +377,20 @@ class _HomeHero extends StatelessWidget {
                             size: 20,
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: tablet ? 26 : 20,
+                          height: 1.02,
+                          fontWeight: FontWeight.w900,
+                          color: dark
+                              ? NightPalette.text
+                              : const Color(0xff3A268A),
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(

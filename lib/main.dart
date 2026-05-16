@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -10,15 +11,28 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:sembast/sembast_io.dart';
-import 'package:sembast_web/sembast_web.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:video_player/video_player.dart';
+
+import 'core/constants/app_identity.dart';
+import 'core/constants/default_learning_catalog.dart';
+import 'core/utils/media_source_helper.dart';
+import 'database/collections/learning_material_collection.dart';
+import 'database/isar_database_service.dart';
+import 'models/app_local_models.dart';
+import 'models/badge_definition.dart';
+import 'repositories/badge_repository.dart';
+import 'repositories/history_repository.dart';
+import 'repositories/material_repository.dart';
+import 'repositories/progress_repository.dart';
+import 'repositories/theme_repository.dart';
+import 'repositories/user_repository.dart';
+import 'services/legacy_migration_service.dart';
+import 'services/offline_bootstrap_service.dart';
+import 'storage/local_storage_service.dart';
 
 part 'src/models.dart';
 part 'src/local_database.dart';
@@ -39,4 +53,4 @@ part 'src/badge_screen.dart';
 
 const adminEmail = 'andibayu8310@gmail.com';
 
-void main() => runApp(const ProviderScope(child: BelajarYukApp()));
+void main() => runApp(const ProviderScope(child: KhoirQuestApp()));

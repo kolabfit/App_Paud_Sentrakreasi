@@ -1,6 +1,6 @@
 {
-    "name": "belajar_yuk",
-    "short_name": "belajar_yuk",
+    "name": "Khoir Quest",
+    "short_name": "Khoir Quest",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

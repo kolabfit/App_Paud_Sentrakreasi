@@ -1,6 +1,8 @@
 part of '../main.dart';
 
-final appStateProvider = ChangeNotifierProvider<AppState>((ref) => AppState());
+final appStateProvider = ChangeNotifierProvider<AppState>(
+  (ref) => AppState(LocalDatabase.instance),
+);
 
 enum Role { child, teacher }
 
@@ -11,12 +13,12 @@ enum TabItem { main, belajar, lagu, akun }
 enum LearnMode { menu, huruf, angka, benda, iqra }
 
 class AppState extends ChangeNotifier {
-  AppState() {
+  AppState(this._db) {
     load();
   }
 
   SharedPreferences? _prefs;
-  final LocalDatabase _db = LocalDatabase.instance;
+  final LocalDatabase _db;
   String? email;
   String childName = 'Teman';
   Gender gender = Gender.boy;
@@ -38,6 +40,9 @@ class AppState extends ChangeNotifier {
   final List<SongItem> songs = [...songsData];
   final Set<String> favorites = {};
   final Set<String> iqraMastered = {};
+  final Set<String> hurfMastered = {};
+  final Set<String> angkaMastered = {};
+  final Set<String> bendaMastered = {};
   final List<String> iqraHistory = [];
   int stars = 12;
   int iqraStreak = 0;
@@ -46,18 +51,24 @@ class AppState extends ChangeNotifier {
       appThemes.firstWhere((t) => t.id == themeId, orElse: () => appThemes[0]);
 
   Future<void> load() async {
+    await _db.ensureReady();
     _prefs = await SharedPreferences.getInstance();
     onboardingSeen = _prefs?.getBool('onboardingSeen') ?? false;
     await _migrateSharedPreferencesAccount();
     final account = await _db.currentAccount();
     if (account == null) {
-      final savedTheme = _prefs?.getString('themeId') ?? 'default';
+      final savedTheme =
+          await _db.loadThemeId() ?? _prefs?.getString('themeId') ?? 'default';
       themeId = appThemes.any((t) => t.id == savedTheme)
           ? savedTheme
           : 'default';
+      favorites.clear();
     } else {
       _applyAccount(account);
     }
+    objects
+      ..clear()
+      ..addAll(await _db.loadObjects());
     songs
       ..clear()
       ..addAll(await _db.loadSongs());
@@ -117,6 +128,7 @@ class AppState extends ChangeNotifier {
   Future<void> logout() async {
     email = null;
     role = null;
+    favorites.clear();
     await _db.clearSession();
     notifyListeners();
   }
@@ -124,6 +136,13 @@ class AppState extends ChangeNotifier {
   Future<void> setTheme(String id) async {
     themeId = id;
     await _prefs?.setString('themeId', id);
+    await _db.saveThemeId(
+      ownerUsername: email,
+      themeId: id,
+      darkMode: appThemes
+          .firstWhere((t) => t.id == id, orElse: () => appThemes[0])
+          .night,
+    );
     await _saveAccount();
     notifyListeners();
   }
@@ -161,17 +180,73 @@ class AppState extends ChangeNotifier {
       (iqraMastered.length / iqraData.length * 100).round(),
     );
     stars += 2;
+    await _recordHistory(
+      materialId: item.latin,
+      category: 'iqra',
+      duration: 1,
+      score: 100,
+    );
     await _saveAccount();
     notifyListeners();
   }
 
-  void addObject(String name, String img, String category) {
-    objects.insert(0, LearningObject(name, img, category));
+  Future<void> markHurfSuccess(String letter) async {
+    hurfMastered.add(letter);
+    progress['membaca'] = min(100, (hurfMastered.length / 26 * 100).round());
+    stars += 2;
+    await _recordHistory(
+      materialId: letter,
+      category: 'huruf',
+      duration: 1,
+      score: 100,
+    );
+    await _saveAccount();
     notifyListeners();
   }
 
-  void removeObject(LearningObject item) {
+  Future<void> markAngkaSuccess(String number) async {
+    angkaMastered.add(number);
+    progress['angka'] = min(100, (angkaMastered.length / 10 * 100).round());
+    stars += 2;
+    await _recordHistory(
+      materialId: number,
+      category: 'angka',
+      duration: 1,
+      score: 100,
+    );
+    await _saveAccount();
+    notifyListeners();
+  }
+
+  Future<void> markBendaSuccess(String name) async {
+    bendaMastered.add(name);
+    progress['benda'] = min(
+      100,
+      (bendaMastered.length / max(1, objects.length) * 100).round(),
+    );
+    stars += 2;
+    await _recordHistory(
+      materialId: name,
+      category: 'benda',
+      duration: 1,
+      score: 100,
+    );
+    await _saveAccount();
+    notifyListeners();
+  }
+
+  Future<void> addObject(String name, String img, String category) async {
+    final object = await _db.addObject(name, img, category);
+    objects.insert(0, object);
+    notifyListeners();
+  }
+
+  Future<void> removeObject(LearningObject item) async {
     objects.remove(item);
+    if (MediaSourceHelper.isLocalFilePath(item.img)) {
+      await _db.deleteFile(item.img);
+    }
+    await _db.removeObject(item);
     notifyListeners();
   }
 
@@ -193,12 +268,21 @@ class AppState extends ChangeNotifier {
   Future<void> removeSong(SongItem song) async {
     songs.remove(song);
     favorites.remove(song.id);
+    if (MediaSourceHelper.isLocalFilePath(song.videoUrl)) {
+      await _db.deleteFile(song.videoUrl);
+    }
     await _db.saveSongs(songs);
+    if (email != null) {
+      await _db.saveFavoriteIds(email!, favorites);
+    }
     notifyListeners();
   }
 
-  void toggleFavorite(String id) {
+  Future<void> toggleFavorite(String id) async {
     favorites.contains(id) ? favorites.remove(id) : favorites.add(id);
+    if (email != null) {
+      await _db.saveFavoriteIds(email!, favorites);
+    }
     notifyListeners();
   }
 
@@ -236,6 +320,9 @@ class AppState extends ChangeNotifier {
     themeId = appThemes.any((t) => t.id == account.themeId)
         ? account.themeId
         : 'default';
+    favorites
+      ..clear()
+      ..addAll(account.favoriteMaterialIds);
     for (final entry in account.progress.entries) {
       progress[entry.key] = entry.value;
     }
@@ -247,6 +334,15 @@ class AppState extends ChangeNotifier {
     iqraHistory
       ..clear()
       ..addAll(account.iqraHistory);
+    hurfMastered
+      ..clear()
+      ..addAll(account.hurfMastered);
+    angkaMastered
+      ..clear()
+      ..addAll(account.angkaMastered);
+    bendaMastered
+      ..clear()
+      ..addAll(account.bendaMastered);
   }
 
   Future<void> _saveAccount() async {
@@ -265,6 +361,30 @@ class AppState extends ChangeNotifier {
         progress: progress,
         iqraMastered: iqraMastered.toList(),
         iqraHistory: iqraHistory.toList(),
+        hurfMastered: hurfMastered.toList(),
+        angkaMastered: angkaMastered.toList(),
+        bendaMastered: bendaMastered.toList(),
+        favoriteMaterialIds: favorites.toList(),
+      ),
+    );
+  }
+
+  Future<void> _recordHistory({
+    required String materialId,
+    required String category,
+    required int duration,
+    required int score,
+  }) async {
+    final username = email;
+    if (username == null) return;
+    await _db.addHistory(
+      username: username,
+      record: LearningHistoryRecord(
+        materialId: materialId,
+        category: category,
+        duration: duration,
+        score: score,
+        playedAt: DateTime.now(),
       ),
     );
   }

@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.belajar_yuk"
+    namespace = "com.example.khoirquest"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.belajar_yuk"
+        applicationId = "com.example.khoirquest"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

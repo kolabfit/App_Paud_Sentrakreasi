@@ -9,8 +9,8 @@ Future<void> speakIndonesian(FlutterTts tts, String text) async {
 
 Future<void> speakArabic(FlutterTts tts, String text) async {
   await tts.setLanguage('ar');
-  await tts.setSpeechRate(.38);
-  await tts.setPitch(1.0);
+  await tts.setSpeechRate(.35);
+  await tts.setPitch(1.1);
   await tts.speak(text);
 }
 
@@ -666,7 +666,6 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
       accent: const Color(0xffFF8F1F),
       stars: app.stars,
       onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-      onGuide: () => setState(() => seru = true),
       chips: const ['Semua Huruf', 'Vokal', 'Konsonan'],
       selectedChip: category,
       onChip: (value) => setState(() {
@@ -685,6 +684,8 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
       itemBuilder: (context, itemIndex, color) {
         final item = filtered[itemIndex];
         final obj = item.objects.first;
+        final letterPronunciation = _letterPronunciation(item.letter);
+        final mastered = app.hurfMastered.contains(item.letter);
         return _PremiumLearningCard(
           color: color,
           title: item.letter,
@@ -693,15 +694,18 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
           imageUrl: obj.img,
           badge: obj.name.toLowerCase(),
           kind: _PremiumCardKind.letter,
+          mastered: mastered,
           onAudio: () async {
-            await speakIndonesian(tts, '${item.letter}. ${obj.name}');
+            await speakIndonesian(tts, letterPronunciation);
             await ref.read(appStateProvider).bump('membaca', 4);
           },
           onMic: () => listenForProgress(
-            expected: obj.name,
+            expected: letterPronunciation,
             successText: 'Pintar! Huruf ${item.letter} cocok.',
             progressKey: 'membaca',
             amount: 6,
+            masteryKey: item.letter,
+            masteryType: 'huruf',
           ),
           listening: listening,
         );
@@ -714,6 +718,8 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
     required String successText,
     required String progressKey,
     required int amount,
+    String? masteryKey,
+    String? masteryType,
   }) async {
     if (!speechReady) {
       setState(() => voiceFeedback = 'Mic belum siap. Coba di device Android.');
@@ -724,27 +730,62 @@ class _HurufScreenState extends ConsumerState<HurufScreen> {
       heard = '';
       voiceFeedback = 'Mendengarkan... ucapkan "$expected".';
     });
-    await speech.listen(
-      localeId: 'id_ID',
-      onResult: (result) async {
-        if (!mounted) return;
-        setState(() => heard = result.recognizedWords);
-        if (!result.finalResult) return;
+
+    bool processed = false;
+    try {
+      await speech.listen(
+        localeId: 'id_ID',
+        listenFor: const Duration(seconds: 5),
+        pauseFor: const Duration(seconds: 2),
+        onResult: (result) async {
+          if (!mounted || processed) return;
+          setState(() => heard = result.recognizedWords);
+          if (!result.finalResult) return;
+
+          processed = true;
+          await speech.stop();
+
+          final ok = _voiceMatches(result.recognizedWords, expected);
+          if (!mounted) return;
+
+          if (ok) {
+            await ref.read(appStateProvider).bump(progressKey, amount);
+            if (masteryKey != null && masteryType == 'huruf') {
+              await ref.read(appStateProvider).markHurfSuccess(masteryKey);
+            }
+            await speakIndonesian(tts, 'Hebat, benar');
+          }
+
+          if (mounted) {
+            setState(() {
+              listening = false;
+              voiceFeedback = ok
+                  ? successText
+                  : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+            });
+          }
+        },
+      );
+
+      // Backup timeout
+      await Future<void>.delayed(const Duration(seconds: 6));
+      if (mounted && !processed) {
         await speech.stop();
-        final ok = _voiceMatches(result.recognizedWords, expected);
-        if (!mounted) return;
-        if (ok) {
-          await ref.read(appStateProvider).bump(progressKey, amount);
-          await speakIndonesian(tts, 'Hebat, benar');
-        }
         setState(() {
           listening = false;
-          voiceFeedback = ok
-              ? successText
-              : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+          voiceFeedback = 'Timeout. Coba lagi, ucapkan "$expected".';
         });
-      },
-    );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          listening = false;
+          voiceFeedback = 'Error mic. Coba lagi.';
+        });
+      }
+    } finally {
+      await speech.stop();
+    }
   }
 }
 
@@ -817,7 +858,6 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
       accent: const Color(0xff4E8BFF),
       stars: app.stars,
       onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-      onGuide: () => setState(() => seru = true),
       chips: const ['Semua Angka', 'Ganjil', 'Genap'],
       selectedChip: category,
       onChip: (value) => setState(() {
@@ -835,6 +875,7 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
       listening: listening,
       itemBuilder: (context, itemIndex, color) {
         final item = filtered[itemIndex];
+        final mastered = app.angkaMastered.contains(item.number);
         return _PremiumLearningCard(
           color: color,
           title: item.number,
@@ -843,6 +884,7 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
           imageUrl: item.img,
           badge: _numberBadge(item.number),
           kind: _PremiumCardKind.number,
+          mastered: mastered,
           onAudio: () async {
             await speakIndonesian(tts, item.name);
             await ref.read(appStateProvider).bump('angka', 5);
@@ -852,6 +894,8 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
             successText: 'Mantap! Angka ${item.number} benar.',
             progressKey: 'angka',
             amount: 7,
+            masteryKey: item.number,
+            masteryType: 'angka',
           ),
           listening: listening,
         );
@@ -864,6 +908,8 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
     required String successText,
     required String progressKey,
     required int amount,
+    String? masteryKey,
+    String? masteryType,
   }) async {
     if (!speechReady) {
       setState(() => voiceFeedback = 'Mic belum siap. Coba di device Android.');
@@ -874,27 +920,62 @@ class _AngkaScreenState extends ConsumerState<AngkaScreen> {
       heard = '';
       voiceFeedback = 'Mendengarkan... ucapkan "$expected".';
     });
-    await speech.listen(
-      localeId: 'id_ID',
-      onResult: (result) async {
-        if (!mounted) return;
-        setState(() => heard = result.recognizedWords);
-        if (!result.finalResult) return;
+
+    bool processed = false;
+    try {
+      await speech.listen(
+        localeId: 'id_ID',
+        listenFor: const Duration(seconds: 5),
+        pauseFor: const Duration(seconds: 2),
+        onResult: (result) async {
+          if (!mounted || processed) return;
+          setState(() => heard = result.recognizedWords);
+          if (!result.finalResult) return;
+
+          processed = true;
+          await speech.stop();
+
+          final ok = _voiceMatches(result.recognizedWords, expected);
+          if (!mounted) return;
+
+          if (ok) {
+            await ref.read(appStateProvider).bump(progressKey, amount);
+            if (masteryKey != null && masteryType == 'angka') {
+              await ref.read(appStateProvider).markAngkaSuccess(masteryKey);
+            }
+            await speakIndonesian(tts, 'Hebat, benar');
+          }
+
+          if (mounted) {
+            setState(() {
+              listening = false;
+              voiceFeedback = ok
+                  ? successText
+                  : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+            });
+          }
+        },
+      );
+
+      // Backup timeout: stop if not processed after 6 seconds
+      await Future<void>.delayed(const Duration(seconds: 6));
+      if (mounted && !processed) {
         await speech.stop();
-        final ok = _voiceMatches(result.recognizedWords, expected);
-        if (!mounted) return;
-        if (ok) {
-          await ref.read(appStateProvider).bump(progressKey, amount);
-          await speakIndonesian(tts, 'Hebat, benar');
-        }
         setState(() {
           listening = false;
-          voiceFeedback = ok
-              ? successText
-              : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+          voiceFeedback = 'Timeout. Coba lagi, ucapkan "$expected".';
         });
-      },
-    );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          listening = false;
+          voiceFeedback = 'Error mic. Coba lagi.';
+        });
+      }
+    } finally {
+      await speech.stop();
+    }
   }
 }
 
@@ -916,7 +997,6 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
   String heard = '';
   String voiceFeedback = 'Tekan mic pada kartu lalu ucapkan nama bendanya.';
   String category = 'Semua';
-  final Set<String> favorites = {};
 
   @override
   void initState() {
@@ -966,7 +1046,6 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
       accent: const Color(0xff32C653),
       stars: app.stars,
       onBack: () => ref.read(appStateProvider).openLearn(LearnMode.menu),
-      onGuide: () => setState(() => seru = true),
       chips: const ['Semua', 'Rumah', 'Sekolah', 'Alam', 'Transportasi'],
       selectedChip: category,
       onChip: (value) => setState(() {
@@ -984,7 +1063,9 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
       listening: listening,
       itemBuilder: (context, itemIndex, color) {
         final item = filtered[itemIndex];
-        final fav = favorites.contains(item.name);
+        final favoriteId = item.id.isEmpty ? 'benda:${item.name}' : item.id;
+        final fav = app.favorites.contains(favoriteId);
+        final mastered = app.bendaMastered.contains(item.name);
         return _PremiumLearningCard(
           color: color,
           title: item.name,
@@ -993,10 +1074,10 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
           imageUrl: item.img,
           badge: _objectFamily(item),
           kind: _PremiumCardKind.object,
+          mastered: mastered,
           favorite: fav,
-          onFavorite: () => setState(() {
-            fav ? favorites.remove(item.name) : favorites.add(item.name);
-          }),
+          onFavorite: () =>
+              ref.read(appStateProvider).toggleFavorite(favoriteId),
           onAudio: () async {
             await speakIndonesian(tts, item.name);
             await ref.read(appStateProvider).bump('benda', 5);
@@ -1006,6 +1087,8 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
             successText: 'Keren! ${item.name} cocok.',
             progressKey: 'benda',
             amount: 7,
+            masteryKey: item.name,
+            masteryType: 'benda',
           ),
           listening: listening,
         );
@@ -1018,6 +1101,8 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
     required String successText,
     required String progressKey,
     required int amount,
+    String? masteryKey,
+    String? masteryType,
   }) async {
     if (!speechReady) {
       setState(() => voiceFeedback = 'Mic belum siap. Coba di device Android.');
@@ -1028,27 +1113,62 @@ class _BendaScreenState extends ConsumerState<BendaScreen> {
       heard = '';
       voiceFeedback = 'Mendengarkan... ucapkan "$expected".';
     });
-    await speech.listen(
-      localeId: 'id_ID',
-      onResult: (result) async {
-        if (!mounted) return;
-        setState(() => heard = result.recognizedWords);
-        if (!result.finalResult) return;
+
+    bool processed = false;
+    try {
+      await speech.listen(
+        localeId: 'id_ID',
+        listenFor: const Duration(seconds: 5),
+        pauseFor: const Duration(seconds: 2),
+        onResult: (result) async {
+          if (!mounted || processed) return;
+          setState(() => heard = result.recognizedWords);
+          if (!result.finalResult) return;
+
+          processed = true;
+          await speech.stop();
+
+          final ok = _voiceMatches(result.recognizedWords, expected);
+          if (!mounted) return;
+
+          if (ok) {
+            await ref.read(appStateProvider).bump(progressKey, amount);
+            if (masteryKey != null && masteryType == 'benda') {
+              await ref.read(appStateProvider).markBendaSuccess(masteryKey);
+            }
+            await speakIndonesian(tts, 'Hebat, benar');
+          }
+
+          if (mounted) {
+            setState(() {
+              listening = false;
+              voiceFeedback = ok
+                  ? successText
+                  : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+            });
+          }
+        },
+      );
+
+      // Backup timeout: stop if not processed after 6 seconds
+      await Future<void>.delayed(const Duration(seconds: 6));
+      if (mounted && !processed) {
         await speech.stop();
-        final ok = _voiceMatches(result.recognizedWords, expected);
-        if (!mounted) return;
-        if (ok) {
-          await ref.read(appStateProvider).bump(progressKey, amount);
-          await speakIndonesian(tts, 'Hebat, benar');
-        }
         setState(() {
           listening = false;
-          voiceFeedback = ok
-              ? successText
-              : 'Hampir benar. Coba ucapkan "$expected" lagi.';
+          voiceFeedback = 'Timeout. Coba lagi, ucapkan "$expected".';
         });
-      },
-    );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          listening = false;
+          voiceFeedback = 'Error mic. Coba lagi.';
+        });
+      }
+    } finally {
+      await speech.stop();
+    }
   }
 }
 
@@ -1066,7 +1186,6 @@ class _PremiumLearningScaffold extends StatelessWidget {
     required this.accent,
     required this.stars,
     required this.onBack,
-    required this.onGuide,
     required this.chips,
     required this.selectedChip,
     required this.onChip,
@@ -1089,7 +1208,6 @@ class _PremiumLearningScaffold extends StatelessWidget {
   final Color accent;
   final int stars;
   final VoidCallback onBack;
-  final VoidCallback onGuide;
   final List<String> chips;
   final String selectedChip;
   final ValueChanged<String> onChip;
@@ -1141,7 +1259,6 @@ class _PremiumLearningScaffold extends StatelessWidget {
               accent: accent,
               stars: stars,
               onBack: onBack,
-              onGuide: onGuide,
             ),
             const SizedBox(height: 14),
             _PremiumSearchAndChips(
@@ -1269,7 +1386,6 @@ class _PremiumLearningHero extends StatelessWidget {
     required this.accent,
     required this.stars,
     required this.onBack,
-    required this.onGuide,
   });
 
   final String titleAsset;
@@ -1279,7 +1395,6 @@ class _PremiumLearningHero extends StatelessWidget {
   final Color accent;
   final int stars;
   final VoidCallback onBack;
-  final VoidCallback onGuide;
 
   @override
   Widget build(BuildContext context) {
@@ -1303,13 +1418,6 @@ class _PremiumLearningHero extends StatelessWidget {
                 ),
                 const Spacer(),
                 _PremiumPoints(stars: stars),
-                const SizedBox(width: 8),
-                _PremiumRoundButton(
-                  icon: Icons.menu_book_rounded,
-                  onTap: onGuide,
-                  color: accent,
-                  label: 'Panduan',
-                ),
               ],
             ),
           ),
@@ -1544,6 +1652,7 @@ class _PremiumLearningCard extends StatelessWidget {
     required this.listening,
     this.favorite = false,
     this.onFavorite,
+    this.mastered = false,
   });
 
   final Color color;
@@ -1558,11 +1667,15 @@ class _PremiumLearningCard extends StatelessWidget {
   final bool listening;
   final bool favorite;
   final VoidCallback? onFavorite;
+  final bool mastered;
 
   @override
   Widget build(BuildContext context) {
     final t = _themeOf(context);
-    final bg = t.night ? Color.lerp(color, NightPalette.surface, .54)! : color;
+    final cardColor = mastered ? const Color(0xff38C985) : color;
+    final bg = t.night
+        ? Color.lerp(cardColor, NightPalette.surface, .54)!
+        : cardColor;
     final textColor = t.night ? NightPalette.text : const Color(0xff293464);
     return Material(
       color: Colors.transparent,
@@ -1575,19 +1688,30 @@ class _PremiumLearningCard extends StatelessWidget {
             color: bg,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: t.night ? color.withValues(alpha: .46) : Colors.white,
+              color: t.night ? cardColor.withValues(alpha: .46) : Colors.white,
               width: 2.2,
             ),
             boxShadow: [
               BoxShadow(
                 blurRadius: 22,
                 offset: const Offset(0, 12),
-                color: color.withValues(alpha: t.night ? .34 : .55),
+                color: cardColor.withValues(alpha: t.night ? .34 : .55),
               ),
             ],
           ),
           child: Stack(
             children: [
+              Positioned(
+                left: 7,
+                top: 7,
+                child: mastered
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      )
+                    : const SizedBox.shrink(),
+              ),
               Positioned(
                 right: 7,
                 top: 7,
@@ -2035,13 +2159,11 @@ class _PremiumRoundButton extends StatelessWidget {
     required this.icon,
     required this.onTap,
     required this.color,
-    this.label,
   });
 
   final IconData icon;
   final VoidCallback onTap;
   final Color color;
-  final String? label;
 
   @override
   Widget build(BuildContext context) {
@@ -2055,24 +2177,11 @@ class _PremiumRoundButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(22),
         child: SizedBox(
-          width: label == null ? 48 : 58,
+          width: 48,
           height: 48,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: color, size: label == null ? 31 : 22),
-              if (label != null)
-                Text(
-                  label!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-            ],
+            children: [Icon(icon, color: color, size: 31)],
           ),
         ),
       ),
@@ -2204,10 +2313,16 @@ bool _voiceMatches(String heard, String expected) {
   final cleanHeard = _cleanVoiceText(heard);
   final cleanExpected = _cleanVoiceText(expected);
   if (cleanHeard.isEmpty || cleanExpected.isEmpty) return false;
-  return cleanHeard.contains(cleanExpected) ||
-      cleanExpected
-          .split(' ')
-          .any((word) => word.length > 2 && cleanHeard.contains(word));
+  // Validasi lebih ketat: harus ada pencocokan minimum 50%
+  final expectedWords = cleanExpected
+      .split(' ')
+      .where((w) => w.length > 1)
+      .toList();
+  if (expectedWords.isEmpty) return cleanHeard.contains(cleanExpected);
+  final matchedWords = expectedWords
+      .where((w) => cleanHeard.contains(w))
+      .length;
+  return matchedWords >= (expectedWords.length / 2).ceil();
 }
 
 String _cleanVoiceText(String value) => value
@@ -2215,6 +2330,38 @@ String _cleanVoiceText(String value) => value
     .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+String _letterPronunciation(String letter) {
+  final map = {
+    'A': 'a',
+    'B': 'be',
+    'C': 'ce',
+    'D': 'de',
+    'E': 'e',
+    'F': 'ef',
+    'G': 'ge',
+    'H': 'ha',
+    'I': 'i',
+    'J': 'je',
+    'K': 'ka',
+    'L': 'el',
+    'M': 'em',
+    'N': 'en',
+    'O': 'o',
+    'P': 'pe',
+    'Q': 'ku',
+    'R': 'er',
+    'S': 'es',
+    'T': 'te',
+    'U': 'u',
+    'V': 've',
+    'W': 'dabel yu',
+    'X': 'eks',
+    'Y': 'wai',
+    'Z': 'zet',
+  };
+  return map[letter.toUpperCase()] ?? letter.toLowerCase();
+}
 
 class IqraLesson extends ConsumerStatefulWidget {
   const IqraLesson({
@@ -2239,7 +2386,6 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
   bool slow = false;
   bool listening = false;
   String feedback = '';
-  final Set<String> favoriteIqra = {};
 
   @override
   void initState() {
@@ -2250,8 +2396,6 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
 
   Future<void> initTts() async {
     await tts.setLanguage('ar');
-    await tts.setPitch(1.06);
-    await tts.setSpeechRate(.42);
   }
 
   @override
@@ -2283,7 +2427,6 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
                 slow: slow,
                 onBack: () =>
                     ref.read(appStateProvider).openLearn(LearnMode.menu),
-                onGuide: widget.onToggle,
                 onSettings: () => setState(() => slow = !slow),
               ),
               const SizedBox(height: 14),
@@ -2300,7 +2443,7 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
                 mastered: app.iqraMastered,
                 listening: listening,
                 feedback: feedback,
-                favorites: favoriteIqra,
+                favorites: app.favorites,
                 onSelect: (i) {
                   setState(() {
                     index = i;
@@ -2320,20 +2463,10 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
                   await practiceIqra(iqraData[i]);
                 },
                 onFavorite: (item) {
-                  setState(() {
-                    favoriteIqra.contains(item.latin)
-                        ? favoriteIqra.remove(item.latin)
-                        : favoriteIqra.add(item.latin);
-                  });
+                  ref
+                      .read(appStateProvider)
+                      .toggleFavorite('iqra:${item.latin}');
                 },
-              ),
-              const SizedBox(height: 18),
-              _IqraModeSeruSection(onOpen: () => setState(() => seru = true)),
-              const SizedBox(height: 18),
-              _IqraRewardSection(
-                stars: app.stars,
-                mastered: app.iqraMastered.length,
-                total: iqraData.length,
               ),
             ],
           ),
@@ -2362,38 +2495,72 @@ class _IqraLessonState extends ConsumerState<IqraLesson> {
         await player.setUrl(item.audioUrl);
         await player.play();
       } catch (_) {
-        await speakArabic(tts, item.char);
+        await _speakIqra(item.char);
       }
     } else {
-      await tts.setSpeechRate(slow ? .28 : .42);
-      await speakArabic(tts, item.char);
+      await _speakIqra(item.char);
     }
     if (!autoplay) await ref.read(appStateProvider).bump('iqra', 1);
+  }
+
+  Future<void> _speakIqra(String text) async {
+    await tts.setLanguage('ar');
+    await tts.setPitch(1.1);
+    await tts.setSpeechRate(slow ? .30 : .35);
+    await tts.speak(text);
   }
 
   Future<void> practiceIqra(IqraItem item) async {
     setState(() {
       listening = true;
-      feedback = 'Dengarkan mic offline...';
+      feedback = 'Dengarkan suara...';
     });
-    await speakArabic(tts, item.char);
-    await Future<void>.delayed(900.ms);
-    final ok = item.latin.length <= 3 || Random().nextInt(5) != 0;
+    await _speakIqra(item.char);
+    await Future<void>.delayed(1200.ms);
+
     if (!mounted) return;
-    if (ok) {
-      confetti.play();
-      setState(() {
-        listening = false;
-        feedback = 'MasyaAllah, benar!';
-      });
-      await speakArabic(tts, item.char);
-      await ref.read(appStateProvider).markIqraSuccess(item);
-    } else {
-      setState(() {
-        listening = false;
-        feedback = 'Coba lagi, ikuti suara pelan ya.';
-      });
-      await playIqra(item);
+
+    final speech = stt.SpeechToText();
+    try {
+      final initialized = await speech.initialize(
+        onError: (_) {},
+        onStatus: (_) {},
+      );
+      if (!initialized) throw Exception('Speech init failed');
+
+      setState(() => feedback = 'Mendengarkan...');
+      await speech.listen(
+        localeId: 'ar_SA',
+        listenFor: const Duration(seconds: 6),
+      );
+      await Future<void>.delayed(6500.ms);
+
+      if (!mounted) return;
+      speech.stop();
+      final heard = speech.lastRecognizedWords;
+      final ok = _voiceMatches(heard, item.latin);
+
+      if (ok) {
+        confetti.play();
+        setState(() => feedback = 'MasyaAllah, benar!');
+        await _speakIqra(item.char);
+        await ref.read(appStateProvider).markIqraSuccess(item);
+      } else {
+        setState(
+          () => feedback = heard.isEmpty
+              ? 'Coba lagi, suara kurang jelas.'
+              : 'Coba lagi, dengarkan pelan ya.',
+        );
+        await Future<void>.delayed(800.ms);
+        if (mounted) await playIqra(item);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => feedback = 'Error: ${e.toString().substring(0, 20)}');
+      }
+    } finally {
+      speech.stop();
+      if (mounted) setState(() => listening = false);
     }
   }
 }
@@ -2537,7 +2704,6 @@ class _IqraHeroSection extends StatelessWidget {
     required this.latinEnabled,
     required this.slow,
     required this.onBack,
-    required this.onGuide,
     required this.onSettings,
   });
 
@@ -2545,7 +2711,6 @@ class _IqraHeroSection extends StatelessWidget {
   final bool latinEnabled;
   final bool slow;
   final VoidCallback onBack;
-  final VoidCallback onGuide;
   final VoidCallback onSettings;
 
   @override
@@ -2574,13 +2739,6 @@ class _IqraHeroSection extends StatelessWidget {
                       ),
                       const Spacer(),
                       _IqraPointsPill(stars: app.stars),
-                      const SizedBox(width: 8),
-                      _IqraCircleButton(
-                        icon: Icons.menu_book_rounded,
-                        active: latinEnabled,
-                        label: 'Panduan',
-                        onTap: onGuide,
-                      ),
                       const SizedBox(width: 8),
                       _IqraCircleButton(
                         icon: slow
@@ -2985,16 +3143,17 @@ class _IqraCatalogSection extends StatelessWidget {
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            final maxExtent = constraints.maxWidth >= 760 ? 166.0 : 142.0;
+            final wide = constraints.maxWidth >= 760;
+            final crossAxisCount = wide ? 4 : 2;
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: iqraData.length,
-              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: maxExtent,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: constraints.maxWidth >= 760 ? .72 : .62,
+                childAspectRatio: wide ? .72 : .68,
               ),
               itemBuilder: (context, i) {
                 final item = iqraData[i];
@@ -3004,7 +3163,7 @@ class _IqraCatalogSection extends StatelessWidget {
                   selected: selectedIndex == i,
                   latinEnabled: latinEnabled,
                   mastered: mastered.contains(item.latin),
-                  favorite: favorites.contains(item.latin),
+                  favorite: favorites.contains('iqra:${item.latin}'),
                   listening: listening && selectedIndex == i,
                   onTap: () => onSelect(i),
                   onAudio: () => onAudio(i),
@@ -3242,317 +3401,6 @@ class _IqraRoundAction extends StatelessWidget {
   );
 }
 
-class _IqraModeSeruSection extends StatelessWidget {
-  const _IqraModeSeruSection({required this.onOpen});
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final modes = [
-      _IqraModeData(
-        'Dengar & Ucap',
-        'Audio lalu ucap',
-        Icons.record_voice_over_rounded,
-        [const Color(0xffB58CFF), const Color(0xff6EC6FF)],
-      ),
-      _IqraModeData('Tebak Huruf', 'Dari suara', Icons.style_rounded, [
-        const Color(0xffFFD36A),
-        const Color(0xffFF8FB8),
-      ]),
-      _IqraModeData('Pilih Huruf', 'Cari yang benar', Icons.touch_app_rounded, [
-        const Color(0xff7FE5C3),
-        const Color(0xff58B7FF),
-      ]),
-      _IqraModeData('Susun Huruf', 'Drag & drop', Icons.extension_rounded, [
-        const Color(0xff9CEB74),
-        const Color(0xffFFE27A),
-      ]),
-      _IqraModeData('Kartu Flash', 'Flashcard audio', Icons.flip_rounded, [
-        const Color(0xffFF9BCF),
-        const Color(0xffB58CFF),
-      ]),
-    ];
-    return _IqraSectionCard(
-      title: 'Mode Seru',
-      subtitle: 'Belajar jadi lebih menyenangkan!',
-      icon: Icons.celebration_rounded,
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: onOpen,
-            child: Container(
-              height: 158,
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(18, 16, 16, 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                gradient: const LinearGradient(
-                  colors: [Color(0xff1498BD), Color(0xff40C8F4)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 26,
-                    offset: const Offset(0, 14),
-                    color: const Color(0xff1498BD).withValues(alpha: .24),
-                  ),
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    right: 12,
-                    bottom: -10,
-                    child: Image.asset(
-                      'assets/images/Anak_Anak_Bernyanyi.png',
-                      width: 150,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Positioned(
-                    right: 122,
-                    top: 8,
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      color: Colors.white.withValues(alpha: .65),
-                      size: 26,
-                    ),
-                  ),
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: SizedBox(
-                      width: 210,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Mode Seru Iqra',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Latihan dengar, ucap, dan kumpulkan bintang.',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 13,
-                              height: 1.2,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            height: 126,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: modes.length,
-              separatorBuilder: (_, i) => const SizedBox(width: 12),
-              itemBuilder: (context, i) =>
-                  _IqraMiniGameCard(data: modes[i], onTap: onOpen),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IqraMiniGameCard extends StatelessWidget {
-  const _IqraMiniGameCard({required this.data, required this.onTap});
-  final _IqraModeData data;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 152,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
-        gradient: LinearGradient(
-          colors: data.colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: Colors.white.withValues(alpha: .75)),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-            color: data.colors.last.withValues(alpha: .22),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(data.icon, color: Colors.white, size: 32),
-          const Spacer(),
-          Text(
-            data.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            data.subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: .86),
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    ).animate().scale(duration: 180.ms),
-  );
-}
-
-class _IqraRewardSection extends StatelessWidget {
-  const _IqraRewardSection({
-    required this.stars,
-    required this.mastered,
-    required this.total,
-  });
-
-  final int stars;
-  final int mastered;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    final rewards = [
-      _IqraRewardData(5, '⭐10'),
-      _IqraRewardData(10, '⭐25'),
-      _IqraRewardData(15, '⭐50'),
-      _IqraRewardData(20, 'Peti'),
-    ];
-    return _IqraSectionCard(
-      title: 'Yuk Kumpulkan Bintang!',
-      subtitle: '$stars bintang siap ditukar hadiah belajar',
-      icon: Icons.emoji_events_rounded,
-      child: Row(
-        children: [
-          Container(
-            width: 86,
-            height: 86,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xffFFE27A), Color(0xffFFB341)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 28,
-                  color: const Color(0xffFFB341).withValues(alpha: .32),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.emoji_events_rounded,
-              color: Colors.white,
-              size: 48,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              children: rewards
-                  .map(
-                    (reward) => _IqraRewardRow(
-                      reward: reward,
-                      done: mastered >= reward.target,
-                      progress: (mastered / reward.target).clamp(0, 1),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IqraRewardRow extends StatelessWidget {
-  const _IqraRewardRow({
-    required this.reward,
-    required this.done,
-    required this.progress,
-  });
-
-  final _IqraRewardData reward;
-  final bool done;
-  final num progress;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      children: [
-        Icon(
-          done ? Icons.check_circle_rounded : Icons.star_border_rounded,
-          color: done ? const Color(0xff38C985) : const Color(0xffFFB341),
-          size: 21,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 9,
-              value: progress.toDouble(),
-              backgroundColor: const Color(0xffF2ECFF),
-              color: done ? const Color(0xff38C985) : const Color(0xffFFB341),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 78,
-          child: Text(
-            '${reward.target} huruf → ${reward.label}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: Color(0xff5E5A7E),
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
 class _IqraSectionCard extends StatelessWidget {
   const _IqraSectionCard({
     required this.title,
@@ -3638,20 +3486,6 @@ class _IqraSectionCard extends StatelessWidget {
       ],
     ),
   ).animate().fadeIn(duration: 320.ms).slideY(begin: .04);
-}
-
-class _IqraModeData {
-  const _IqraModeData(this.title, this.subtitle, this.icon, this.colors);
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final List<Color> colors;
-}
-
-class _IqraRewardData {
-  const _IqraRewardData(this.target, this.label);
-  final int target;
-  final String label;
 }
 
 class IqraFunMode extends ConsumerStatefulWidget {

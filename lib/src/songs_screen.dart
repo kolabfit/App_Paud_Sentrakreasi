@@ -320,11 +320,89 @@ class _SingModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 390;
+    final leadMic = Image.asset(
+      'assets/images/Mic.png',
+      width: mobile ? 72 : 88,
+      fit: BoxFit.contain,
+    );
+    final sideBox = Image.asset(
+      'assets/images/box_musik.png',
+      width: mobile ? 88 : 116,
+      height: mobile ? 80 : 104,
+      fit: BoxFit.contain,
+    );
+    final body = Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Mode Nyanyi Seru',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: mobile ? 19 : 22,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            'Belajar lebih menyenangkan dengan suara!',
+            maxLines: mobile ? 3 : 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: mobile ? 12 : 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 10,
+            children: [
+              const _MusicWave(color: Colors.white),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Ayo Coba',
+                      style: TextStyle(
+                        color: Color(0xffB14DDF),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: Color(0xffB14DDF)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
     return GestureDetector(
       onTap: onTap,
       child: Container(
         constraints: const BoxConstraints(minHeight: 150),
-        padding: const EdgeInsets.fromLTRB(18, 18, 16, 16),
+        padding: EdgeInsets.fromLTRB(
+          mobile ? 14 : 18,
+          18,
+          mobile ? 14 : 16,
+          16,
+        ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
           gradient: const LinearGradient(
@@ -341,81 +419,27 @@ class _SingModeCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Image.asset(
-              'assets/images/Mic.png',
-              width: 88,
-              fit: BoxFit.contain,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
+        child: mobile
+            ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
-                    'Mode Nyanyi Seru',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  const Text(
-                    'Belajar lebih menyenangkan dengan suara!',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
                   Row(
-                    children: [
-                      const _MusicWave(color: Colors.white),
-                      const SizedBox(width: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Ayo Coba',
-                              style: TextStyle(
-                                color: Color(0xffB14DDF),
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              color: Color(0xffB14DDF),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [leadMic, const SizedBox(width: 12), body],
                   ),
+                  const SizedBox(height: 12),
+                  Align(alignment: Alignment.centerRight, child: sideBox),
+                ],
+              )
+            : Row(
+                children: [
+                  leadMic,
+                  const SizedBox(width: 16),
+                  body,
+                  const SizedBox(width: 6),
+                  sideBox,
                 ],
               ),
-            ),
-            const SizedBox(width: 6),
-            Image.asset(
-              'assets/images/box_musik.png',
-              width: 116,
-              height: 104,
-              fit: BoxFit.contain,
-            ),
-          ],
-        ),
       ).animate().fadeIn(duration: 330.ms).slideY(begin: .06),
     );
   }
@@ -558,13 +582,82 @@ class _PremiumSongCard extends StatelessWidget {
   }
 }
 
-class _MiniMusicPlayer extends StatelessWidget {
+class _MiniMusicPlayer extends StatefulWidget {
   const _MiniMusicPlayer({required this.song});
   final SongItem song;
 
   @override
+  State<_MiniMusicPlayer> createState() => _MiniMusicPlayerState();
+}
+
+class _MiniMusicPlayerState extends State<_MiniMusicPlayer> {
+  VideoPlayerController? _controller;
+  VoidCallback? _videoListener;
+
+  @override
+  void initState() {
+    super.initState();
+    _initController();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MiniMusicPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.song.videoUrl != widget.song.videoUrl) {
+      _controller?.dispose();
+      _controller = null;
+      _initController();
+    }
+  }
+
+  Future<void> _initController() async {
+    final source = widget.song.videoUrl.trim();
+    if (source.isEmpty) return;
+    if (MediaSourceHelper.isDataUri(source)) {
+      final persisted = await LocalStorageService.instance.persistDataUri(
+        source,
+        bucket: StorageBucket.songVideos,
+        fileName: 'mini_song_${DateTime.now().millisecondsSinceEpoch}.mp4',
+      );
+      if (!mounted || persisted == null) return;
+      _controller = VideoPlayerController.file(File(persisted));
+    } else if (MediaSourceHelper.isLocalFilePath(source)) {
+      _controller = VideoPlayerController.file(File(source));
+    } else if (MediaSourceHelper.isAssetPath(source)) {
+      _controller = VideoPlayerController.asset(source);
+    } else {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(source));
+    }
+    await _controller?.initialize();
+    _videoListener = () {
+      if (mounted) setState(() {});
+    };
+    _controller?.addListener(_videoListener!);
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    if (_videoListener != null) {
+      _controller?.removeListener(_videoListener!);
+    }
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final song = widget.song;
     final thumb = youtubeThumb(song.videoUrl);
+    final c = _controller;
+    final ready = c != null && c.value.isInitialized;
+    final playing = ready && c.value.isPlaying;
+    final duration = ready ? c.value.duration : Duration.zero;
+    final position = ready ? c.value.position : Duration.zero;
+    final progress = duration.inMilliseconds <= 0
+        ? 0.0
+        : (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
+    final mobile = MediaQuery.sizeOf(context).width < 460;
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: BackdropFilter(
@@ -588,86 +681,184 @@ class _MiniMusicPlayer extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              _SongThumb(url: thumb, small: true),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: mobile
+              ? Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      song.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    Text(
-                      song.fileName ?? 'Lagu Anak',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: .86),
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Text(
-                          '01:20',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(99),
-                            child: LinearProgressIndicator(
-                              value: .48,
-                              minHeight: 7,
-                              backgroundColor: Colors.white.withValues(
-                                alpha: .35,
-                              ),
-                              color: const Color(0xffFFD34D),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          '02:45',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                          ),
+                        _SongThumb(url: thumb, small: true),
+                        const SizedBox(width: 12),
+                        Expanded(child: _MiniSongMeta(song: song)),
+                        const SizedBox(width: 10),
+                        _MiniControl(
+                          icon: playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          main: true,
+                          onTap: ready
+                              ? () {
+                                  playing ? c.pause() : c.play();
+                                  setState(() {});
+                                }
+                              : null,
                         ),
                       ],
                     ),
+                    const SizedBox(height: 10),
+                    _MiniSongProgress(
+                      progress: progress,
+                      position: position,
+                      duration: duration,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    _SongThumb(url: thumb, small: true),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _MiniSongMeta(song: song),
+                          const SizedBox(height: 8),
+                          _MiniSongProgress(
+                            progress: progress,
+                            position: position,
+                            duration: duration,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _MiniControl(
+                      icon: Icons.replay_10_rounded,
+                      onTap: ready
+                          ? () {
+                              final target =
+                                  position - const Duration(seconds: 10);
+                              c.seekTo(
+                                target < Duration.zero ? Duration.zero : target,
+                              );
+                              setState(() {});
+                            }
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    _MiniControl(
+                      icon: playing
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      main: true,
+                      onTap: ready
+                          ? () {
+                              playing ? c.pause() : c.play();
+                              setState(() {});
+                            }
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    _MiniControl(
+                      icon: Icons.forward_10_rounded,
+                      onTap: ready
+                          ? () {
+                              final target =
+                                  position + const Duration(seconds: 10);
+                              c.seekTo(target > duration ? duration : target);
+                              setState(() {});
+                            }
+                          : null,
+                    ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              const _MiniControl(icon: Icons.skip_previous_rounded),
-              const SizedBox(width: 8),
-              const _MiniControl(icon: Icons.pause_rounded, main: true),
-              const SizedBox(width: 8),
-              const _MiniControl(icon: Icons.skip_next_rounded),
-              const SizedBox(width: 8),
-              const _MiniControl(icon: Icons.queue_music_rounded),
-            ],
-          ),
         ),
       ),
+    );
+  }
+}
+
+class _MiniSongMeta extends StatelessWidget {
+  const _MiniSongMeta({required this.song});
+  final SongItem song;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          song.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        Text(
+          song.fileName ?? 'Lagu Anak',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: .86),
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniSongProgress extends StatelessWidget {
+  const _MiniSongProgress({
+    required this.progress,
+    required this.position,
+    required this.duration,
+  });
+
+  final double progress;
+  final Duration position;
+  final Duration duration;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          _formatMiniDuration(position),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 7,
+              backgroundColor: Colors.white.withValues(alpha: .35),
+              color: const Color(0xffFFD34D),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          _formatMiniDuration(duration),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -802,7 +993,7 @@ class _SongThumb extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             if (url != null)
-              CachedNetworkImage(imageUrl: url!, fit: BoxFit.cover)
+              AppImage(url: url!, fit: BoxFit.cover)
             else
               Container(
                 decoration: const BoxDecoration(
@@ -951,35 +1142,48 @@ class _DurationPill extends StatelessWidget {
 }
 
 class _MiniControl extends StatelessWidget {
-  const _MiniControl({required this.icon, this.main = false});
+  const _MiniControl({required this.icon, this.main = false, this.onTap});
   final IconData icon;
   final bool main;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: main ? 54 : 40,
-      height: main ? 54 : 40,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: main ? Colors.white : Colors.white.withValues(alpha: .18),
-        boxShadow: main
-            ? [
-                BoxShadow(
-                  blurRadius: 16,
-                  offset: const Offset(0, 8),
-                  color: Colors.black.withValues(alpha: .16),
-                ),
-              ]
-            : null,
-      ),
-      child: Icon(
-        icon,
-        color: main ? const Color(0xffFFB020) : Colors.white,
-        size: main ? 32 : 24,
+    return GestureDetector(
+      onTap: onTap,
+      child: Opacity(
+        opacity: onTap == null ? .55 : 1,
+        child: Container(
+          width: main ? 54 : 40,
+          height: main ? 54 : 40,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: main ? Colors.white : Colors.white.withValues(alpha: .18),
+            boxShadow: main
+                ? [
+                    BoxShadow(
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                      color: Colors.black.withValues(alpha: .16),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Icon(
+            icon,
+            color: main ? const Color(0xffFFB020) : Colors.white,
+            size: main ? 32 : 24,
+          ),
+        ),
       ),
     );
   }
+}
+
+String _formatMiniDuration(Duration duration) {
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$minutes:$seconds';
 }
 
 class _MusicWave extends StatelessWidget {

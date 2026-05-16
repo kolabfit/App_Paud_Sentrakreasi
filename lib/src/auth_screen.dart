@@ -18,7 +18,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final t = ref.watch(appStateProvider).theme;
     final slides = [
       (
-        'Selamat datang di Belajar Yuk!',
+        'Selamat datang di ${AppIdentity.appName}!',
         'Belajar sambil bermain setiap hari.',
         Icons.waving_hand_rounded,
         'assets/images/Anak_hebat.png',

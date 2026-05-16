@@ -13,8 +13,12 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
   final url = TextEditingController();
   final category = TextEditingController(text: 'hewan');
   final songTitle = TextEditingController();
+  String? pickedObjectName;
+  String? pickedObjectPath;
   String? pickedSongName;
-  String? pickedSongDataUrl;
+  String? pickedSongPath;
+  String? pickedIqraMediaName;
+  String? pickedIqraMediaPath;
 
   @override
   Widget build(BuildContext context) {
@@ -222,14 +226,49 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
               label: 'Kategori',
               icon: Icons.category,
             ),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardColor(context),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: Colors.green.withValues(alpha: .16),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.image_rounded, color: Colors.green),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      pickedObjectName ?? 'Belum ada gambar lokal dipilih',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => pickObjectImage(tab == 'huruf'),
+                    icon: const Icon(Icons.folder_open_rounded),
+                    label: const Text('Pilih'),
+                  ),
+                ],
+              ),
+            ),
             FilledButton.icon(
               onPressed: () {
-                if (name.text.isEmpty || url.text.isEmpty) return;
+                final imagePath = pickedObjectPath ?? url.text.trim();
+                if (name.text.isEmpty || imagePath.isEmpty) return;
                 ref
                     .read(appStateProvider)
-                    .addObject(name.text, url.text, category.text);
+                    .addObject(name.text, imagePath, category.text);
                 name.clear();
                 url.clear();
+                setState(() {
+                  pickedObjectName = null;
+                  pickedObjectPath = null;
+                });
               },
               icon: const Icon(Icons.upload),
               label: const Text('Simpan Data'),
@@ -304,7 +343,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: () {
-                final video = pickedSongDataUrl;
+                final video = pickedSongPath;
                 if (songTitle.text.isEmpty || video == null) return;
                 ref
                     .read(appStateProvider)
@@ -312,7 +351,7 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
                 songTitle.clear();
                 setState(() {
                   pickedSongName = null;
-                  pickedSongDataUrl = null;
+                  pickedSongPath = null;
                 });
               },
               icon: const Icon(Icons.save_rounded),
@@ -377,18 +416,49 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
             ),
             AppField(
               controller: url,
-              label: 'URL audio atau gambar Iqra',
+              label: 'Path audio/gambar lokal atau URL',
               icon: Icons.perm_media_rounded,
+            ),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: cardColor(context),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: Colors.purple.withValues(alpha: .16),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.audiotrack_rounded, color: Colors.purple),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      pickedIqraMediaName ??
+                          'Belum ada media Iqra lokal dipilih',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: pickIqraMedia,
+                    icon: const Icon(Icons.folder_rounded),
+                    label: const Text('Pilih'),
+                  ),
+                ],
+              ),
             ),
             FilledButton.icon(
               onPressed: () {
+                if (pickedIqraMediaPath != null) {
+                  url.text = pickedIqraMediaPath!;
+                }
                 name.clear();
-                url.clear();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
-                      'Media Iqra siap dipreview dan disinkronkan.',
-                    ),
+                    content: Text('Media Iqra lokal siap dipakai offline.'),
                   ),
                 );
               },
@@ -492,16 +562,76 @@ class _TeacherDashboardState extends ConsumerState<TeacherDashboard> {
     final file = result?.files.single;
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
-    final ext = (file.extension ?? 'mp4').toLowerCase();
-    final mime = switch (ext) {
-      'webm' => 'video/webm',
-      'mov' => 'video/quicktime',
-      'm4v' => 'video/x-m4v',
-      _ => 'video/mp4',
-    };
+    final localPath = await LocalDatabase.instance.saveVideoBytes(
+      bytes: bytes,
+      fileName: file.name,
+    );
     setState(() {
       pickedSongName = file.name;
-      pickedSongDataUrl = 'data:$mime;base64,${base64Encode(bytes)}';
+      pickedSongPath = localPath;
+    });
+  }
+
+  Future<void> pickObjectImage(bool isHuruf) async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    final file = result?.files.single;
+    final bytes = file?.bytes;
+    if (file == null || bytes == null) return;
+    final localPath = await LocalDatabase.instance.saveImageBytes(
+      bytes: bytes,
+      fileName: file.name,
+      bucket: isHuruf ? StorageBucket.hurufImages : StorageBucket.bendaImages,
+    );
+    setState(() {
+      pickedObjectName = file.name;
+      pickedObjectPath = localPath;
+      url.text = localPath;
+    });
+  }
+
+  Future<void> pickIqraMedia() async {
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const [
+        'mp3',
+        'wav',
+        'm4a',
+        'aac',
+        'ogg',
+        'png',
+        'jpg',
+        'jpeg',
+      ],
+      withData: true,
+    );
+    final file = result?.files.single;
+    final bytes = file?.bytes;
+    if (file == null || bytes == null) return;
+    final isAudio = [
+      'mp3',
+      'wav',
+      'm4a',
+      'aac',
+      'ogg',
+    ].contains((file.extension ?? '').toLowerCase());
+    final localPath = isAudio
+        ? await LocalDatabase.instance.saveAudioBytes(
+            bytes: bytes,
+            fileName: file.name,
+            bucket: StorageBucket.iqraAudio,
+          )
+        : await LocalDatabase.instance.saveImageBytes(
+            bytes: bytes,
+            fileName: file.name,
+            bucket: StorageBucket.hurufImages,
+          );
+    setState(() {
+      pickedIqraMediaName = file.name;
+      pickedIqraMediaPath = localPath;
+      url.text = localPath;
     });
   }
 }

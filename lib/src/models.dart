@@ -16,10 +16,16 @@ class LetterGroup {
 }
 
 class LearningObject {
-  const LearningObject(this.name, this.img, [this.category = 'benda']);
+  const LearningObject(
+    this.name,
+    this.img, [
+    this.category = 'benda',
+    this.id = '',
+  ]);
   final String name;
   final String img;
   final String category;
+  final String id;
 }
 
 class NumberItem {

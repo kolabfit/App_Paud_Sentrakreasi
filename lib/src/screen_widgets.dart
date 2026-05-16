@@ -60,8 +60,29 @@ class _DirectVideoState extends State<DirectVideo> {
   @override
   void initState() {
     super.initState();
-    controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
-      ..initialize().then((_) => mounted ? setState(() {}) : null);
+    _initController();
+  }
+
+  Future<void> _initController() async {
+    final source = widget.url.trim();
+    if (source.isEmpty) return;
+    if (MediaSourceHelper.isDataUri(source)) {
+      final persisted = await LocalStorageService.instance.persistDataUri(
+        source,
+        bucket: StorageBucket.songVideos,
+        fileName: 'legacy_song_${DateTime.now().millisecondsSinceEpoch}.mp4',
+      );
+      if (!mounted || persisted == null) return;
+      controller = VideoPlayerController.file(File(persisted));
+    } else if (MediaSourceHelper.isLocalFilePath(source)) {
+      controller = VideoPlayerController.file(File(source));
+    } else if (MediaSourceHelper.isAssetPath(source)) {
+      controller = VideoPlayerController.asset(source);
+    } else {
+      controller = VideoPlayerController.networkUrl(Uri.parse(source));
+    }
+    await controller?.initialize();
+    if (mounted) setState(() {});
   }
 
   @override
@@ -678,6 +699,25 @@ class AppImage extends StatelessWidget {
   final BoxFit fit;
   @override
   Widget build(BuildContext context) {
+    if (url.trim().isEmpty) {
+      return const EmptyState(text: 'Gambar belum tersedia.');
+    }
+    if (MediaSourceHelper.isAssetPath(url)) {
+      return Image.asset(
+        url,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) =>
+            const EmptyState(text: 'Gambar belum tersedia.'),
+      );
+    }
+    if (MediaSourceHelper.isLocalFilePath(url)) {
+      return Image.file(
+        File(url),
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) =>
+            const EmptyState(text: 'Gambar belum tersedia.'),
+      );
+    }
     return CachedNetworkImage(
       imageUrl: url,
       fit: fit,

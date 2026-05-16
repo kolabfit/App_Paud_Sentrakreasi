@@ -31,11 +31,9 @@ class _BadgeCollectionScreenState extends ConsumerState<BadgeCollectionScreen> {
   Future<void> _checkNewBadges() async {
     final app = ref.read(appStateProvider);
     if (app.email == null) return;
-    final db = await LocalDatabase.instance.db;
     final newIds = await BadgeService.instance.checkNewUnlocks(
       username: app.email!,
       progress: app.progress,
-      database: db,
     );
     if (newIds.isNotEmpty && mounted) {
       setState(() => _pendingUnlocks = newIds);

@@ -783,7 +783,7 @@ class _PremiumBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Belajar Yuk! Premium 👑',
+                    '${AppIdentity.appName} Premium 👑',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,
@@ -1169,7 +1169,7 @@ class _AccountSectionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              ?trailing,
+              ...?trailing == null ? null : <Widget>[trailing!],
             ],
           ),
           const SizedBox(height: 14),
@@ -1484,7 +1484,9 @@ class _AccountPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 380;
     return Container(
+      constraints: BoxConstraints(maxWidth: compact ? 160 : 220),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: .12),
@@ -1495,12 +1497,16 @@ class _AccountPill extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 15),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
         ],

@@ -1,7 +1,7 @@
 part of '../main.dart';
 
-class BelajarYukApp extends ConsumerWidget {
-  const BelajarYukApp({super.key});
+class KhoirQuestApp extends ConsumerWidget {
+  const KhoirQuestApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,7 +114,7 @@ class BelajarYukApp extends ConsumerWidget {
     );
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Belajar Yuk!',
+      title: AppIdentity.appName,
       theme: themed,
       builder: (context, child) => AnimatedTheme(
         data: themed,
@@ -168,7 +168,7 @@ class SplashScreen extends StatelessWidget {
                 .moveY(begin: -10, end: 10, duration: 1200.ms),
             const SizedBox(height: 20),
             Text(
-              'BELAJAR YUK!',
+              'KHOIR QUEST',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w900,
